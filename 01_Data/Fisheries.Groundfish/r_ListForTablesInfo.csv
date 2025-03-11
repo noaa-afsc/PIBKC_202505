@@ -1,0 +1,5 @@
+lbl,cap,ori
+tbl-GFBbyGearType,"Bycatch of PIBKC in the BSAI groundfish fisheries, by gear type. Biomass and (discard) mortality are in kilograms. Bycatch in numbers is only available after 2008/09. Discard mortality rates of 0.2 and 0.8 for fixed and trawl gear, respectively, were applied to the biomass estimates to obtain discard mortalities for all years.",P
+tbl-GFBAbdByTargetType,"Estimated bycatch (numbers of crab, rounded to whole numbers) of PIBKC in the groundfish fisheries, by target type (avalable only after 2008/09). Discard mortality rates have not been applied.",P
+tbl-GFBBioByTargetType,"Estimated bycatch (biomass, in kg) of PIBKC in the groundfish fisheries, by target type (avalable only after 2008/09). Discard mortality rates have not been applied.",P
+tbl-GFBMrtByTargetType,"Estimated discard mortality (in kg) of PIBKC in the BSAI groundfish fisheries, by target type.Discard mortality rates of 0.2 and 0.8 for fixed and trawl gear, respectively, were applied to bycatch estimates to obtain discard mortalities for all years.",P

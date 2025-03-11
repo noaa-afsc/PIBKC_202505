@@ -1,0 +1,821 @@
+---
+title: "NMFS EBS Shelf Survey Data"
+author: "William T. Stockhausen"
+institute: NOAA/NMFS/AFSC
+date: '`r format(Sys.time(), "%b %e, %Y")`'
+fontsize: 11pt 
+number-sections: true
+reference-location: document
+reference-section-title: References
+bibliography: '`r path.expand("~/Work/Projects/Bibliography/AllRefs.bib")`'
+csl: '`r system.file("files/CJFAS.csl",package="wtsQMD")`'
+link-citations: true
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format: 
+  html: 
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 8
+    fig-asp: 1.4
+    fig-dpi: 100
+    embed-resources: true
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+      - file: "/Users/williamstockhausen/Work/Programming/R/Library/wtsQMD/files/ltx_ExtraLatexIncludes.tex"
+echo: false
+warning: false
+results: 'hide'
+keep-md: false
+keep-tex: false
+keep-yaml: false
+editor: source
+editor_options: 
+  chunk_output_type: console
+concordance: true
+params:
+  setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
+  testing: false
+---
+<!-- IMPORTANT: if used as a child doc, all chunk labels must be unique within the overall document -->
+
+<!-- 
+  NOTEs: 
+     * child_path$peek() gives path to current script.
+     * before starting a child document, do 
+         "child_path$push(file.path(child_path$peek(),rel_path))" first, 
+         where rel_path is the relative path to the child
+     * after a child document has finished, do "child_path$pop()" to return to current path value
+-->
+
+## NMFS EBS bottom trawl shelf survey {#sec-SurveyData}
+
+<!-- if not child doc, set up required objects -->
+```{r}
+#| label: TSD_setup
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: "asis"
+  if (!exists("testing")) testing = params$testing;
+  if (testing) cat(params$setup,"\n\n")
+  source(params$setup);
+  if (testing) {
+    cat("In TSD_setup:\n\n")
+    cat("root = ",root,"\n\n");
+    cat("peek = '",child_path$peek(),"'\n\n",sep="");
+  }
+```
+
+```{r}
+#| label: setup_TSD
+#| results: 'asis'
+  require(tcsamSurveyData)
+  require(ggplot2);
+  require(kableExtra);
+  require(tables);
+  Sum = wtsUtilities::Sum;
+  old_thm = ggplot2::theme_set(cowplot::theme_cowplot(font_size = 10) +
+                               cowplot::background_grid() +
+                               cowplot::panel_border());
+  thm = wtsPlots::getStdTheme();
+  options("readr.show_col_types"=FALSE);
+  if (testing) cat("dirThs =",child_path$peek(),"\n\n")
+  if (!exists("s")){
+    fn = file.path(child_path$peek(),"../../rda_AssessmentSetup.RData");
+    if (child_path$peek()=="") fn = file.path(rstudioapi::getActiveProject(),
+                                              "rda_AssessmentSetup.RData")
+    s = wtsUtilities::getObj(fn);
+  }
+  tsr   = wtsUtilities::getObj(s$fnData_TSs);
+```
+
+Time series of annual estimates of area-swept abundance and biomass, as well as size composition data, are available for PIBKC from the summer NMFS EBS Shelf Bottom Trawl Survey based on the stock area first defined in the 2013 assessment [@PIBKC2013], which includes the Pribilof District and a 20 nm strip adjacent to the eastern edge of the District (Figure [-@fig-RegAreaQ]). The adjacent area was added as a result of the 2015 rebuilding plan and the concern that crab outside the Pribilof District were not being accounted for in the assessment. The survey has been conducted annually since 1975, with the exception of 2020. In 2020, the survey was not conducted due to issues associated with the global COVID-19 pandemic.
+
+The standardized EBS bottom trawl survey is based on a systematic design with a fixed sampling station at the center of each 37.04 × 37.04 km (20 × 20 nautical mile) grid square [@LauthAndNichol2013]. In the area surrounding the Pribilof Islands, high-density "corner stations" are sampled to better assess local blue king crab concentrations (Figure [-@fig-SurveyBasemap]). Since 1982, the survey has used standard 83-112 Eastern otter trawls, which have 25.3-m (83 ft) headropes and 34.1-m (112 ft) footropes, to sample crab and groundfish species at 77 stations within the Pribilof District, augmented by a column of 9 stations to the east of the District (indicated by the dashed red line in Figure [-@fig-RegAreaQ]) to better encompass the stock limits. The standard tow is nominally 30 minutes on bottom at a tow speed of 3 knots (\~1.5 nmi distance), but net mensuration gear is used to more accurately assess time and distance "on bottom" as well as net width to provide a precise estimate of area swept. The net mensuration gear also allows the collection of depth and temperature data. Details of the NMFS bottom trawl protocols established by the National Oceanic and Atmospheric Administration can be found in [@Stauffer2004].
+
+For each tow, all crab were removed from the catch, sorted by species and sex, and a total catch weight was obtained for each species [e.g., @Zacher2022]. All blue king crab were sampled for biological characteristics, including sex, carapace length (to 0.1 mm), weight, shell condition, and egg color, egg condition, and clutch size for females. Male crab were characterized as immature, mature, sublegal, and legal based on the size categories in Table [-@tbl-SurveySizeGroups]. Females were characterized as immature or mature based on abdominal flap morphology and egg presence [@Zacher2022].
+
+Biomass estimates were calculated using the number of individual male and female crab at each 1 mm size category, using weight-size relationships developed by the AFSC's Kodiak Laboratory (the same as those applied to fishery data: Equation [-@eq-WatZ]; @Zacher2022). Weights were calculated for each 1 mm size bin and summed within the legal male, sublegal male, mature, and immature size categories for each sex caught at a station. Total biomass was estimated by averaging crab density (biomass /area swept) from all stations within the area-augmented Pribilof District, and multiplying by the total area [@Zacher2022].
+
+Forty-five stations were included in survey strata for PIBKC in 1975, increasing to 86 by 1983 and remaining essentially constant since then (Tables [-@tbl-SurveySampleSizesMales] and [-@tbl-SurveySampleSizesFemales]). In the early 1980s, males were found at up to 38 of these stations and females were found at up to 24. This decreased in the 1990s when males occurred in a maximum of 22 stations, with females occurring at a maximum of 15 stations. Since 2010, the maximum number of stations at which males were caught is 9, with a median of 5, while females were caught at a maximum of 8 stations, with a median of 4. In similar fashion, the number of males caught declined from a maximum of 858 in 1975 to a since-2010 maximum of 22; for females, the corresponding numbers are 343 (in 1981) and 24. In most years, more mature crab were caught than immature, although there were exceptions (e.g., 1989 for both sexes). In 2023, a total of 2 (immature/sublegal) males and 7 (mature) females were caught at 2 and 1 stations, respectively, all in the high-density sampling area (Tables [-@tbl-SurveySampleSizesMales] and [-@tbl-SurveySampleSizesFemales]). No mature males were caught in 2023. In 2024, no PIBKC were caught.
+
+Annual survey abundance and biomass for PIBKC have declined precipitously over the course of the 45 year time series (Tables [-@tbl-SurveyStatsAbundance]-[-@tbl-SurveyBiomassFemales] and Figures [-@fig-SurveyMaleAbd1]-[-@fig-SurveyFemaleBio2]). On decadal scales, mean survey abundance and biomass have declined for males from `r numM((tsr$dfrStats |> subset((SEX=="all males")&(decade==1970)))$meanAbd)` crab and `r numKT((tsr$dfrStats |> subset((SEX=="all males")&(decade==1970)))$meanBio)` in the 1970s to `r numM((tsr$dfrStats |> subset((SEX=="all males")&(decade==2010)))$meanAbd)` crab and `r numKT((tsr$dfrStats |> subset((SEX=="all males")&(decade==2010)))$meanBio)` in the 2010s. Similarly, mean survey abundance and biomass have declined for females from `r numM((tsr$dfrStats |> subset((SEX=="all females")&(decade==1970)))$meanAbd)` crab and `r numKT((tsr$dfrStats |> subset((SEX=="all females")&(decade==1970)))$meanBio)` in the 1970s to `r numM((tsr$dfrStats |> subset((SEX=="all females")&(decade==2010)))$meanAbd)` crab and `r numKT((tsr$dfrStats |> subset((SEX=="all females")&(decade==2010)))$meanBio)` in the 2010s. Dampened oscillations in survey abundance and biomass have occurred on roughly decadal scales for this stock, with maxima exhibited at the start of the time series for males, followed by a decline to low values in the mid-to-late 1980s, an increase to a relative maximum in the early 1990s, followed by a decline to consistent low values since 1999 (a "blip" with large confidence intervals in 2005 was the exception). Females show a similar pattern, but lagged perhaps 5 years or so (without a "blip" in 2005). In 2019, apparent increases observed in mature and legal male biomass estimates relative to 2018 were attributed primarily to an abbreviated, but "still valid," tow that may have had the effect of artificially increasing the CPUE calculated for the affected station [@Zacher2019].
+
+One feature that characterizes survey-based estimates of abundance and biomass for PIBKC is the large uncertainty (cv on the order of 0.5-1) associated with the estimates, which complicates the interpretation of sometimes large interannual swings in estimates of abundance (Tables [-@tbl-SurveyAbundanceMales] and [-@tbl-SurveyAbundanceFemales], Figures [-@fig-SurveyMaleAbd1]-[-@fig-SurveyFemaleAbd2]) and biomass (Tables [-@tbl-SurveyBiomassMales] and [-@tbl-SurveyBiomassFemales], Figures [-@fig-SurveyMaleBio1]-[-@fig-SurveyFemaleBio2]). Estimated total abundance of male PIBKC from the NMFS EBS bottom trawl survey declined from ~24 million crab in 1975, the first year of the “standardized” survey, to ~150,000 in 2016 (the lowest estimated abundance since 2004, which was the minimum for the time series. Following a general decline to a low-point in 1985 (~500,000 males), abundance increased by a factor of 10 in the early 1990s, then generally declined (with small-amplitude oscillations superimposed) to the present. Estimated female abundance generally followed a similar trend, spiking at 180 million crab in 1980, from ~13 million crab in 1975 and only ~1 million in 1979, then returned to more typical levels in 1981 (~6 million crab). More recently, abundance has fluctuated around 200,000 females. Estimated biomass for both males and females has followed trends similar to those in abundance.
+
+Size frequencies across the entire time series are shown by sex in Figures [-@fig-SurveySizeComps1]-[-@fig-SurveySizeComps3]. Based on patterns for crab > 50 mm CL, a single recruitment event starting in 1988 is evident in Figure [-@fig-SurveySizeComps2], with a second possible event starting in 2005. However, these plots provide little evidence of recent recruitment.
+
+The small numbers of crab caught in recent surveys make it difficult to draw firm conclusions regarding spatial patterns (Figures [-@fig-SurveyNumCPUEMales]-[-@fig-SurveyBioCPUEFemales]). Examining decadaly-averaged patterns, however, there appears to have been a fairly strong contraction in range from extending beyond the PIHCZ in the 1980s to contained within the PIHCZ currently. The current spatial pattern of PIBKC abundance is centered fairly compactly within the Pribilof District to the east of St. Paul Island and north of St. George Island, within a 60 nm radius of St. Paul.
+
+```{r}
+#| label: tbl-SurveySizeGroups
+#--create table
+tmp = tsr$dfrZGT |> dplyr::filter(sex=="male",`size.range`!="all");
+tblr<-tables::as.tabular(tmp);
+rowLabels(tblr)[,1]<-"";
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3),isHTM);
+lbl = wtsQMD::getLabel();
+cap<-paste0("Size groups for various male components of the PIBKC stock used here. ",
+            "Female maturity is based on abdominal flap morphology and egg presence.");
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+rm(lbl,cap,kbl,tmp,tblr);
+```
+
+```{r}
+#| label: TSD_CreateSampleSizeTable
+  tmp<-tsr$dfrACD.ByX.PD;
+  tbl0<-tabular(Factor(YEAR,name="year")~
+                  SEX*(Heading("hauls")*numHauls)*Sum,data=tmp);
+  colLabels(tbl0)<-tolower(colLabels(tbl0)[c(2,3,4),]);
+  colLabels(tbl0)[2,]<-"number";
+  colLabels(tbl0)[3,]<-"of hauls";
+```
+
+```{r}
+#| label: tbl-SurveySampleSizesMales
+#--create table
+tbl1<-tabular(Factor(YEAR,name="year")~
+                DropEmpty(which="col")*SEX*(Heading("non-0 hauls")*numNonZeroHauls+Heading("obs. crab")*numIndivs)*Sum,
+              data=tmp[tmp$SEXp=="males",]);
+colLabels(tbl1)<-tolower(colLabels(tbl1)[c(2,3,4),]);
+colLabels(tbl1)[2,]<-rep(c("non-0","no."), 5);
+colLabels(tbl1)[3,]<-rep(c("hauls","crab"), 5);
+rowLabels(tbl1)<-rowLabels(tbl0);#--need this to ensure row labels are identical for cbind;
+tblr<-cbind(tbl0[,1],tbl1);
+colLabels(tblr)[1,1]<-"survey";
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,2,4,6,8,10,12),isHTM);
+lbl = wtsQMD::getLabel();
+cap = paste0("Sample sizes (number of survey hauls, number hauls where crab were caught, number of crab caught) for male population components in the NMFS EBS trawl survey in the Pribilof District.");
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+rm(lbl,cap,kbl,tblr,tbl1);
+```
+
+```{r}
+#| label: tbl-SurveySampleSizesFemales
+#--create table
+tbl1<-tabular(Factor(YEAR,name="year")~
+                DropEmpty(which="col")*SEX*(Heading("non-0 hauls")*numNonZeroHauls+Heading("obs. crab")*numIndivs)*Sum,
+              data=tmp[tmp$SEXp=="females",]);
+colLabels(tbl1)<-tolower(colLabels(tbl1)[c(2,3,4),]);
+colLabels(tbl1)[2,]<-rep(c("non-0","no."), 3);
+colLabels(tbl1)[3,]<-rep(c("hauls","crab"), 3);
+rowLabels(tbl1)<-rowLabels(tbl0);#--need this to ensure row labels are identical for cbind;
+tblr<-cbind(tbl0[,1],tbl1);
+colLabels(tblr)[1,1]<-"survey";
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,2,4,6,8),isHTM);
+lbl = wtsQMD::getLabel();
+cap = "Sample sizes (number of survey hauls, number hauls where crab were caught, number of crab caught) for female population components in the NMFS EBS trawl survey in the Pribilof District.";
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+rm(lbl,cap,kbl,tblr,tbl1,tbl0,tmp);
+```
+
+```{r}
+#| label: tbl-SurveyStatsAbundance
+#--create table
+tmp = tsr$dfrStats;
+tblr = tabular(Factor(SEXp,name="sex")*Factor(SEX,name="category")*DropEmpty(which="row") ~ 
+                    Heading("decade")*Factor(decade)*((Heading("mean abundance")*meanAbd+Heading("max abundance")*maxAbd)*wtsUtilities::Sum), 
+              data=tmp);
+colLabels(tblr)[3,] = rep.int(c("mean","max"),6);
+colLabels(tblr) = colLabels(tblr)[1:3,];
+rowLabels(tblr) = rowLabels(tblr)[,2];
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3,5,7,9,11),isHTM);
+lbl = wtsQMD::getLabel();
+cap = "Summary statistics for trawl survey abundance by decade, in millions."
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="L");
+rm(lbl,cap,kbl,tblr,tmp);
+```
+
+```{r}
+#| label: tbl-SurveyStatsBiomass
+#--create table
+tmp = tsr$dfrStats;
+tblr = tabular(Factor(SEXp,name="sex")*Factor(SEX,name="category")*DropEmpty(which="row") ~ 
+                    Heading(decade)*Factor(decade)*(Heading(`mean biomass`)*meanBio+Heading(`max biomass`)*maxBio)*wtsUtilities::Sum, 
+              data=tmp);
+colLabels(tblr)[3,] = rep.int(c("mean","max"),6);
+colLabels(tblr) = colLabels(tblr)[1:3,];
+rowLabels(tblr) = rowLabels(tblr)[,2];
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3,5,7,9,11),isHTM);
+lbl = wtsQMD::getLabel();
+cap = "Summary statistics for trawl survey biomass by decade, in 1,000s t."
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="L");
+rm(lbl,cap,kbl,tblr,tmp);
+```
+
+```{r}
+#| label: TSD_GetTimeSeries
+  #--get dataframe with abundance/biomass time series by sex for tables
+  tmp<-tsr$dfrACD.ByX.PD |> 
+          dplyr::mutate(totABUNDANCE=round(totABUNDANCE,3),#--in millions
+                        totBIOMASS=round(totBIOMASS,3));   #--in 1,000's t
+```
+
+```{r}
+#| label: tbl-SurveyAbundanceMales
+#--create table
+tblr<-tabular(Factor(YEAR,name="year")~
+                DropEmpty(which="col")*SEX*
+                (Heading("number")*Format(nsmall=3,scientific=FALSE)*totABUNDANCE+Heading("cv")*
+                   Format(digits=3,nsmall=3,scientific=FALSE)*cvABUNDANCE)*Sum,
+              data=tmp[tmp$SEXp=="males",]);
+colLabels(tblr)<-tolower(colLabels(tblr)[c(2,3),]);
+colLabels(tblr)[2,]<-rep(c("est.","cv"), 5);
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3,5,7,9),isHTM);
+lbl = wtsQMD::getLabel();
+cap<-"Estimated annual abundance (millions of crab) of male PIBKC population components from the NMFS EBS trawl survey.";
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="L");
+rm(lbl,cap,kbl,tblr);
+```
+
+```{r}
+#| label: tbl-SurveyAbundanceFemales
+#--create table
+tblr<-tabular(Factor(YEAR,name="year")~
+                DropEmpty(which="col")*SEX*(Heading("number")*Format(nsmall=3,scientific=FALSE)*totABUNDANCE+Heading("cv")*Format(digits=3,nsmall=3,scientific=FALSE)*cvABUNDANCE)*Sum,
+              data=tmp[tmp$SEXp=="females",]);
+colLabels(tblr)<-tolower(colLabels(tblr)[c(2,3),]);
+colLabels(tblr)[2,]<-rep(c("est.","cv"), 3);
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3,5,7),isHTM);
+lbl = wtsQMD::getLabel();
+cap<-"Estimated annual abundance (millions of crab) of female PIBKC population components from the NMFS EBS trawl survey.";
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="P");
+rm(lbl,cap,kbl,tblr);
+```
+
+```{r}
+#| label: tbl-SurveyBiomassMales
+#--create table
+tblr<-tabular(Factor(YEAR,name="year")~
+                DropEmpty(which="col")*SEX*(Heading("biomass")*Format(nsmall=3,scientific=FALSE)*totBIOMASS+Heading("cv")*Format(digits=3,nsmall=3,scientific=FALSE)*cvBIOMASS)*Sum,
+              data=tmp[tmp$SEXp=="males",]);
+colLabels(tblr)<-tolower(colLabels(tblr)[c(2,3),]);
+colLabels(tblr)[2,]<-rep(c("est.","cv"), 5);
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3,5,7,9),isHTM);
+lbl = wtsQMD::getLabel();
+cap<-"Estimated annual biomass (1,000s t) of male PIBKC population components from the NMFS EBS trawl survey.";
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="P");
+rm(lbl,cap,kbl,tblr);
+```
+
+```{r}
+#| label: tbl-SurveyBiomassFemales
+#--create table
+tblr<-tabular(Factor(YEAR,name="year")~
+                DropEmpty(which="col")*SEX*(Heading("biomass")*Format(nsmall=3,scientific=FALSE)*totBIOMASS+
+                                              Heading("cv")*Format(digits=3,nsmall=3,scientific=FALSE)*cvBIOMASS)*Sum,
+              data=tmp[tmp$SEXp=="females",]);
+colLabels(tblr)<-tolower(colLabels(tblr)[c(2,3),]);
+colLabels(tblr)[2,]<-rep(c("est.","cv"), 3);
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3,5),isHTM);
+lbl = wtsQMD::getLabel();
+cap<-"Estimated annual biomass (1,000s t) of female PIBKC population components from the NMFS EBS trawl survey.";
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl,ori="P");
+rm(lbl,cap,kbl,tblr);
+```
+
+```{r}
+#| label: fig-SurveyBasemap
+  gisPath = "~/Work/StockAssessments-Crab/Data/GIS/Shapefiles";
+  #----create EBS basemap
+  crsWGS84<-wtsGIS::get_crs("WGS84");
+  bbox = wtsGIS::getBBox(list(bottomleft=list(lon=-175,lat=55),
+                              topright  =list(lon=-166,lat=59)))
+  basemap = wtsGIS::gg_CreateBasemapLayers(bbox=bbox);
+  #--get survey grid layers
+  grid = (tcsamSurveyData::gisGetSurveyGridLayers()$grid) |> 
+           wtsGIS::cropFeaturesToBBox(bbox);
+  #----create PI Habitat Conservation Area layers
+  hca = wtsGIS::readShapefile(file.path(gisPath,
+                                        "ConservationAreas/pribilof_hca.shp"),
+                              crs=crsWGS84);#--no need to crop features
+  #--EBS survey grid
+  p = ggplot() + basemap +
+        geom_sf(data=grid,fill=NA) + 
+        geom_sf(data=tsr$sd.stns,colour="blue",alpha=0.5) + 
+        geom_sf(data=hca,fill=NA,colour="orange",linewidth=1);
+  lbl = wtsQMD::getLabel();
+  cap = paste0("NMFS EBS Shelf Survey stations in the Pribilof District (large dots), ",
+               "the survey station grid (thin black lines), and ",
+               "the Pribilof Islands Habitat Conservation Zone (orange outline).");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleAbd1
+  #--abundance time series
+  #----males
+  jitter = FALSE;
+  type   = "abundance";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("immature","mature","all")), 
+              type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,25))+ggplot2::scale_y_continuous(breaks=seq(5,25,5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey abundance time series for male PIBKC, by maturity category.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleAbd2
+  #--abundance time series
+  #----males
+  jitter = FALSE;
+  type   = "abundance";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("sublegal","legal","all")), 
+              type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,25))+ggplot2::scale_y_continuous(breaks=seq(5,25,5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey abundance time series for male PIBKC, by fishery category.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleAbd3
+  #--abundance time series
+  #----males
+  jitter = FALSE;
+  type   = "abundance";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("immature","mature","all")), 
+               type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",xlims=c(2010,tsr$maxYr),showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,0.6))+ggplot2::scale_y_continuous(breaks=seq(0,3.0,0.1)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,2)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey abundance time series for male PIBKC, by population category, from 2010.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleAbd4
+  #--abundance time series
+  #----males
+  jitter = FALSE;
+  type   = "abundance";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("sublegal","legal","all")), 
+               type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",xlims=c(2010,tsr$maxYr),showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,0.6))+ggplot2::scale_y_continuous(breaks=seq(0,3.0,0.1)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,2)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey abundance time series for male PIBKC, by fishery category, from 2010.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyFemaleAbd1
+  #--abundance time series
+  #----females
+  jitter = FALSE;
+  type   = "abundance";
+  sex    = "females";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-9),
+                           ctg=factor(ctg,levels=c("immature","mature","all")));
+  p = plotACD(tmp, type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,25))+ggplot2::scale_y_continuous(breaks=seq(5,25,5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey abundance time series for female PIBKC, by population category. ",
+              "The values for mature and all females for 1980 are off-scale to better show ",
+              "details of remaining values.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyFemaleAbd2
+  #--abundance time series
+  #----females
+  jitter = FALSE;
+  type   = "abundance";
+  sex    = "females";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-9),
+                           ctg=factor(ctg,levels=c("immature","mature","all")));
+  p = plotACD(tmp, type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",xlims=c(2010,tsr$maxYr),showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,NA))+ggplot2::scale_y_continuous(breaks=seq(0,2.5,0.5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey abundance time series for female PIBKC, by population category, from 2010.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleBio1
+  #--biomass time series
+  #----males
+  jitter = FALSE;
+  type   = "biomass";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("immature","mature","all")), 
+              type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,40))+ggplot2::scale_y_continuous(breaks=seq(5,100,5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey biomass time series for male PIBKC, by maturity category.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleBio2
+  #--biomass time series
+  #----males
+  jitter = FALSE;
+  type   = "biomass";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("sublegal","legal","all")), 
+              type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,40))+ggplot2::scale_y_continuous(breaks=seq(5,100,5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey biomass time series for male PIBKC, by fishery category.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleBio3
+  #--biomasse time series
+  #----males
+  jitter = FALSE;
+  type   = "biomass";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("immature","mature","all")), 
+              type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",xlims=c(2010,tsr$maxYr),showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,NA))+ggplot2::scale_y_continuous(breaks=seq(0,2.5,0.5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey biomass time series for male PIBKC, by maturity category, from 2010.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyMaleBio4
+  #--biomass time series
+  #----males
+  jitter = FALSE;
+  type   = "biomass";
+  sex    = "males";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-7),
+                           ctg=factor(ctg,levels=c("immature","sublegal","mature","legal","all")));
+  p = plotACD(tmp |> dplyr::filter(ctg %in% c("sublegal","legal","all")), 
+              type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",xlims=c(2010,tsr$maxYr),showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,NA))+ggplot2::scale_y_continuous(breaks=seq(0,2.5,0.5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey biomass time series for male PIBKC, by fishery category, from 2010.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyFemaleBio1
+  #--abundance time series
+  #----males
+  jitter = FALSE;
+  type   = "biomass";
+  sex    = "females";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-9),
+                           ctg=factor(ctg,levels=c("immature","mature","all")));
+  p = plotACD(tmp, type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,25))+ggplot2::scale_y_continuous(breaks=seq(5,25,5)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey biomass time series for female PIBKC, by population category. ",
+              "The values for mature and all females for 1980 are off-scale to better show ",
+              "details of remaining values.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyFemaleBio2
+  #--abundance time series
+  #----males
+  jitter = FALSE;
+  type   = "biomass";
+  sex    = "females";
+  tmp    = tsr$dfrACD.ByX.PD |> 
+             subset(SEXp==sex) |> 
+             dplyr::mutate(ctg=stringr::str_sub(as.character(SEX),end=-9),
+                           ctg=factor(ctg,levels=c("immature","mature","all")));
+  p = plotACD(tmp, type=type, factors="ctg", faceting=ctg~.,facetsDrop=TRUE,
+              facetsScale=NULL,jitter=jitter,xlab="",xlims=c(2010,tsr$maxYr),showPlots=FALSE) +
+        ggplot2::coord_cartesian(ylim=c(0,0.5))+ggplot2::scale_y_continuous(breaks=seq(0,3.0,0.1)) + 
+        ggplot2::scale_x_continuous(breaks=seq(1900,2100,5)) + 
+        ggplot2::theme(legend.position="none",legend.title=element_blank()) +
+        wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("NMFS survey biomass time series for female PIBKC, by population category, from 2010.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(jitter,type,sex,tmp,p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveySizeComps1
+  #--size compositions
+  tmp1<-aggregateSizeComps(tsr$dfrZCs.ByXS.PD,facs="SEX");
+  p<-wtsPlots::plotMDFR.Bubbles(
+        tmp1,x="year",y="size",value.var="value",colour="value",alpha=0.5,
+        facet_grid="sex~stratum",
+        useColourGradient=TRUE,
+        ylab="size (mm CL)",
+        guideTitleSize="Abundance\n(millions)",
+        showPlot=FALSE);
+  cap<-paste0("Annual size compositions for PIBKC in the NMFS EBS trawl survey, ",
+              "by sex, over the entire survey period. ",
+              "The survey was not conducted in 2020.");
+  lbl = wtsQMD::getLabel();
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveySizeComps2
+  #--size compositions
+  p<-wtsPlots::plotMDFR.Bubbles(
+        tmp1 |> dplyr::filter(!((year==1980)&(sex=="females"))),
+        x="year",y="size",value.var="value",colour="value",alpha=0.5,
+        facet_grid="sex~stratum",
+        useColourGradient=TRUE,
+        ylab="size (mm CL)",
+        guideTitleSize="Abundance\n(millions)",
+        showPlot=FALSE);
+  cap<-paste0("Annual size compositions for PIBKC in the NMFS EBS trawl survey, by sex, ",
+              "over the entire survey period,",
+              " except that females in 1980 have been removed to show detail. ",
+              "The survey was not conducted in 2020.");
+  lbl = wtsQMD::getLabel();
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveySizeComps3
+  #--size compositions
+  p<-wtsPlots::plotMDFR.Bubbles(
+        tmp1 |> dplyr::filter(year > 2005),
+        x="year",y="size",value.var="value",colour="value",alpha=0.5,
+        facet_grid="sex~stratum",
+        useColourGradient=TRUE,
+        ylab="size (mm CL)",
+        guideTitleSize="Abundance\n(millions)",
+        showPlot=FALSE);
+  cap<-paste0("Annual size compositions for PIBKC in the NMFS EBS trawl survey, ",
+              "by sex, since 2006. ",
+              "The survey was not conducted in 2020.");
+  lbl = wtsQMD::getLabel();
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+```{r TSD_CalcMaps}
+  tmp = tsr$dfrCPUE.ByX |> 
+          dplyr::mutate(decade=floor(YEAR/10)*10) |>
+          dplyr::group_by(decade,GIS_STATION,SEX) |> 
+          dplyr::summarize(numCPUE=mean(numCPUE,na.rm=TRUE),
+                           wgtCPUE=mean(wgtCPUE,na.rm=TRUE)) |>
+          dplyr::ungroup();
+  sd.grid = wtsGIS::mergeDataframeWithLayer(tmp,grid,
+                                            dataID="GIS_STATION",
+                                            geomsID="STATION_ID",
+                                            sfJoinType="left join",
+                                            spAllData=FALSE,spDuplicateGeoms=TRUE) |> 
+             dplyr::filter((numCPUE>0)&(decade>1970));
+```
+
+```{r}
+#| label: fig-SurveyNumCPUEMales
+  p = ggplot(sd.grid |> dplyr::filter(SEX=="males"),mapping=aes(colour=numCPUE,fill=numCPUE)) + 
+        basemap +
+        geom_sf(data=grid,fill=NA,inherit.aes=FALSE) + 
+        geom_sf(alpha=0.5) + 
+        scale_colour_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(number/sq-nmi)") +
+        scale_fill_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(number/sq-nmi)") +
+        geom_sf(data=hca,fill=NA,colour="orange",linewidth=1,inherit.aes=FALSE) + 
+        facet_wrap(~decade,ncol=2) + 
+        theme(legend.position=c(0.99,0.01),
+              legend.justification=c(1,0)) +
+        wtsPlots::getStdTheme();
+  cap<-paste0("Decadal-average abundance CPUE (number/sq-nmi) by for male PIBKC in the NMFS EBS trawl survey.");
+  lbl = wtsQMD::getLabel();
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyNumCPUEFemales
+  p = ggplot(sd.grid |> dplyr::filter(SEX=="females"),mapping=aes(colour=numCPUE,fill=numCPUE)) + 
+        basemap +
+        geom_sf(data=grid,fill=NA,inherit.aes=FALSE) + 
+        geom_sf(alpha=0.5) + 
+        scale_colour_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(number/sq-nmi)") +
+        scale_fill_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(number/sq-nmi)") +
+        geom_sf(data=hca,fill=NA,colour="orange",linewidth=1,inherit.aes=FALSE) + 
+        facet_wrap(~decade,ncol=2) + 
+        theme(legend.position=c(0.99,0.01),
+              legend.justification=c(1,0)) +
+        wtsPlots::getStdTheme();
+  cap<-paste0("Decadal-average abundance CPUE (number/sq-nmi) by for female PIBKC in the NMFS EBS trawl survey.");
+  lbl = wtsQMD::getLabel();
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyBioCPUEMales
+  p = ggplot(sd.grid |> dplyr::filter(SEX=="males"),mapping=aes(colour=wgtCPUE,fill=wgtCPUE)) + 
+        basemap +
+        geom_sf(data=grid,fill=NA,inherit.aes=FALSE) + 
+        geom_sf(alpha=0.5) + 
+        scale_colour_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(t/sq-nmi)") +
+        scale_fill_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(t/sq-nmi)") +
+        geom_sf(data=hca,fill=NA,colour="orange",linewidth=1,inherit.aes=FALSE) + 
+        facet_wrap(~decade,ncol=2) + 
+        theme(legend.position=c(0.99,0.01),
+              legend.justification=c(1,0)) +
+        wtsPlots::getStdTheme();
+  cap<-paste0("Decadal-average biomass CPUE (t/sq-nmi) by for male PIBKC in the NMFS EBS trawl survey.");
+  lbl = wtsQMD::getLabel();
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-SurveyBioCPUEFemales
+  p = ggplot(sd.grid |> dplyr::filter(SEX=="females"),mapping=aes(colour=wgtCPUE,fill=wgtCPUE)) + 
+        basemap +
+        geom_sf(data=grid,fill=NA,inherit.aes=FALSE) + 
+        geom_sf(alpha=0.5) + 
+        scale_colour_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(t/sq-nmi)") +
+        scale_fill_viridis_c(option="magma",direction=-1,limits=c(0,NA),name="CPUE\n(t/sq-nmi)") +
+        geom_sf(data=hca,fill=NA,colour="orange",linewidth=1,inherit.aes=FALSE) + 
+        facet_wrap(~decade,ncol=2) + 
+        theme(legend.position=c(0.99,0.01),
+              legend.justification=c(1,0)) +
+        wtsPlots::getStdTheme();
+  cap<-paste0("Decadal-average biomass CPUE (t/sq-nmi) by for female PIBKC in the NMFS EBS trawl survey.");
+  lbl = wtsQMD::getLabel();
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=p,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,lbl,cap,pth);
+```
+
+<!-- tables, if not child doc and lstTbls is not empty -->
+```{r}
+#| label: tables_TSD
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printTablesSectionFromList.R",package="wtsQMD"));
+```
+
+<!-- figures, if not child doc and lstFigs is not empty -->
+```{r}
+#| label: figures_TSD
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));
+```
+

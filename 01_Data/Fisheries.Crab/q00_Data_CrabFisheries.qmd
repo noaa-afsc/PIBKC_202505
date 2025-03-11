@@ -1,0 +1,218 @@
+---
+title: "Crab Fisheries Data"
+author: "William T. Stockhausen"
+institute: NOAA/NMFS/AFSC
+date: '`r format(Sys.time(), "%b %e, %Y")`'
+fontsize: 11pt 
+number-sections: true
+reference-location: document
+reference-section-title: References
+bibliography: bib_PIBKC_CrabFisheries.bib
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format: 
+  html: 
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 8
+    fig-asp: 1.4
+    fig-dpi: 100
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+#      - file: '`r system.file("files/ltx_ExtraLatexIncludesNew.tex",package="wtsQMD")`'
+echo: false
+warning: false
+results: 'hide'
+keep-md: false
+keep-tex: false
+keep-yaml: false
+editor: source
+editor_options: 
+  chunk_output_type: console
+concordance: true
+params:
+  setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
+  testing: false
+---
+<!-- IMPORTANT: if used as a child doc, all chunk labels must be unique within the overall document -->
+
+<!-- 
+  NOTEs: 
+     * child_path$peek() gives path to current script.
+     * before starting a child document, do 
+         "child_path$push(file.path(child_path$peek(),rel_path))" first, 
+         where rel_path is the relative path to the child
+     * after a child document has finished, do "child_path$pop()" to return to current path value
+-->
+
+## Crab fisheries {#sec-CrabFisheriesData}
+
+<!-- if not child doc, set up required objects -->
+```{r}
+#| label: CFD_setup
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: "asis"
+  testing = params$testing;
+  if (testing) cat(params$setup,"\n\n")
+  source(params$setup);
+  if (testing) cat("root = ",root,"\n\n")
+```
+
+```{r}
+#| label: setup_CFD
+#| results: 'asis'
+  require(ggplot2);
+  require(kableExtra);
+  require(tables);
+  Sum = wtsUtilities::Sum;
+  old_thm = ggplot2::theme_set(cowplot::theme_cowplot(font_size = 10) +
+                               cowplot::background_grid() +
+                               cowplot::panel_border());
+  thm = wtsPlots::getStdTheme();
+  options("readr.show_col_types"=FALSE);
+  if (testing) cat("dirThs =",child_path$peek(),"\n\n")
+  if (!exists("s")){
+    fn = file.path(child_path$peek(),"../../rda_AssessmentSetup.RData");
+    if (child_path$peek()=="") fn = file.path(rstudioapi::getActiveProject(),
+                                              "rda_AssessmentSetup.RData")
+    s = wtsUtilities::getObj(fn);
+  }
+  cfr = wtsUtilities::getObj(s$fnData_CFs);
+```
+
+### Retained catch
+
+The directed fishery has been closed since 1999/2000. Historical retained catch data (Table [-@tbl-RetCatch], Figure [-@fig-CrabFisheriesMortality]) were obtained from @ADFG2011. Retained catch data start in `r min(cfr$dfrRet$year)`, reaching a maximum of `r numT(cfr$retMax)` in `r cfr$retMaxYr` before dropping precipitously. In the 1995/96 to 1998/99 seasons, blue king crab and red king crab were fished under the same Guideline Harvest Level (GHL). Total allowable catch (TAC) for the directed fishery has been set at zero since 1999/2000; there will be no retained catch allowed during the `r wtsQMD::crabYear(s$asmtYr)` crab fishing season.
+
+### Bycatch and discard mortality
+
+Estimates for annual bycatch of PIBKC in the crab fisheries is provided by ADF&G for sublegal males (< 138 mm CL), legal males ($\geq$ 138 mm CL), and females based on data collected by onboard observers in the snow crab and Tanner crab fisheries (aggregated across fisheries in Table [-@tbl-CrabFisheriesBycatch] and Figure [-@fig-CrabFisheriesMortality]), although data may be incomplete for some of these fisheries. Prior to 1998/99, observer data exist only for catcher-processor vessels, so discarded catch before this date are not included here. Catch weight was calculated by first determining the mean weight for crabs in the three categories (legal non-retained, sublegal, and female). The average weight for each category was then calculated from length frequency tables, where the carapace length ($z$, in mm) was converted to weight ($w$, in g) using the following equation:
+
+$$w = \alpha \cdot z^\beta$$ {#eq-WatZ}
+
+Values for the length-to-weight conversion parameters $\alpha$ and $\beta$ were applied across the time period (males: $\alpha$ = 0.000508, $\beta$ = 3.106409; females:  $\alpha$ = 0.02065, $\beta$ = 2.27; @DalyEtAl2014). Average weights ($\overline{W}$) for each category were calculated using the following equation:
+
+$$\overline{W}=\frac{\sum w_z \cdot n_z}{\sum n_z}$$ {#eq-MeanW}
+
+where $w_z$ is crab weight-at-size $z$ (i.e., carapace length) using Equation [-@eq-WatZ], and $n_z$ is the number of crabs observed at that size in the category. Finally, estimated total non-retained weights for each crab fishery were the product of average weight ($\overline{W}$), CPUE (numbers/observed pot) based on observer data, and total effort (pot lifts) in each crab fishery.
+
+As in the previous assessment [@PIBKC2021], a `r 100*cfr$hm.pot`% handling mortality rate was applied to the bycatch estimates to calculate discard mortality on PIBKC in these pot fisheries. In assessments prior to 2017, a handling mortality rate of 50% was applied to bycatch in the pot fisheries. The revised value used here is now consistent with the rates used in other king crab assessments [e.g., @BBRKC2016]. Estimates of bycatch and discard mortality (Table [-@tbl-CrabFisheriesBycatch] and Figure [-@fig-CrabFisheriesMortality]) reached a maximum of `r numT(cfr$bycMaxM)` for discard mortality by `r cfr$bycMaxYr`, after which they decline to near zero, with an average over the last five years for discard mortality of only `r numT(cfr$bycAvgM)`. 
+
+For `r cfr$strYr`, discard mortality in the crab fisheries was `r numT(cfr$bycCurM)` (Ben Daly, ADF&G, pers. comm. July 6, 2023).
+
+```{r}
+#| label: tbl-RetCatch
+#--create retained catch table
+tmp = cfr$dfrRet;
+tmp$`crab year` = paste0(substr(tmp$`crab year`,1,5),substr(tmp$`crab year`,8,9));
+tblr<-tables::tabular((Heading(Year)*Factor(`crab year`))~ (Format(big.mark=",") *
+                           (Heading(number)*abundance+
+                            Heading(biomass)*biomass)+
+                            Heading(`avg. cpue`)*avgCPUE)*sum,
+                      data=tmp);
+colLabels(tblr)[2,] = c("","(t)","(num. legal crab/pot lift)");#--remove the "sum" headings
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,3),isHTM);
+lbl = wtsQMD::getLabel();
+cap = paste0("Retained catch and average CPUE (number of legal males/pot lift) of PIBKC in the directed pot fishery, ", 
+             "1973-1998/99. The directed fishery has been closed since the 1999/2000 fishing season. ",
+             "NA: not applicable (no directed fishery)");
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+rm(lbl,cap,kbl,tmp,tblr);
+```
+
+```{r}
+#| label: tbl-CrabFisheriesBycatch
+#--create bycatch table
+tmp = cfr$dfrByc |> 
+        dplyr::mutate(females = round(females,3),
+                      `legal males` = round(`legal males`,3),
+                      `sublegal males` = round(`sublegal males`,3),
+                      total = round(total,3),
+                      mortality = round(mortality,3));
+tblr<-tables::tabular(Heading(Year)*Factor(`crab year`)~Format(digits=3,width=5,nsmall=3)*(
+                       Heading(catch)*(Heading(females)*females+Heading(`sublegal males`)*`sublegal males`+
+                                      Heading(`legal males`)*`legal males`+Heading(`total catch`)*total)*sum+
+                        Heading(discard)*(Heading(mortality)*mortality)*sum
+                       ),data=tmp);
+colLabels(tblr)<-colLabels(tblr)[1:2,]; #remove the "sum" headings
+colLabels(tblr)[1,5] = "discard";
+kbl = wtsQMD::convert_tblr_to_kbl(tblr,c(1,5),isHTM);
+lbl = wtsQMD::getLabel();
+cap<-paste0("Bycatch catch of PIBKC in the directed and other crab fisheries, ",
+            "as estimated from crab observer data. ",
+            "A discard mortality rate of ",cfr$hm.pot,
+            " was applied to obtain discard mortalities. Units are t.");
+lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+rm(lbl,cap,kbl,tblr,tmp);
+```
+
+```{r}
+#| label: fig-CrabFisheriesMortality
+  #--plot retained catch and discard mortality
+  tbl1 = cfr$dfrRet %>% dplyr::select(year,biomass) %>% dplyr::mutate(type="retained");
+  tbl2 = cfr$dfrByc %>% dplyr::select(year,biomass=mortality) %>% dplyr::mutate(type="discard mortality");
+  tbl = rbind(tbl1,tbl2);
+  tbl$type=factor(tbl$type);
+  p1 <- ggplot(tbl,aes_string(x="year",y="biomass",colour="type")) +
+          geom_line(size=1.0) +
+          labs(x="Year",y="Retained Catch and Discard Mortality (t)",colour="mortality type") +
+          theme(legend.position=c(0.99,0.99),
+                legend.justification=c(1,1));
+  p2 <- ggplot(tbl %>% subset(type=="discard mortality"),aes_string(x="year",y="biomass",colour="type")) +
+          geom_line(size=1.0) +
+          labs(x="Year",y="Discard Mortality (t)") +
+          coord_cartesian(xlim=c(1997,NA)) +
+          theme(legend.position="none");
+  pg = cowplot::plot_grid(p1,p2,ncol=1);
+  lbl = wtsQMD::getLabel();
+  cap<-paste0("Retained catch and discard mortality, in t, for PIBKC in the crab fisheries. ",
+              "A discard mortality rate of ",cfr$hm.pot," was used to convert bycatch biomass to mortality. ",
+              "The lower plot shows discard mortality in the crab fisheries on an expanded ",
+              "y-axis scale to show annual details.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=pg,width=def_wid,height=6,units="in",dpi=def_dpi);
+  rm(p1,p2,pg,lbl,cap,pth);
+```
+
+<!-- tables, if not child doc and lstTbls is not empty -->
+```{r}
+#| label: tables_CFD
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printTablesSectionFromList.R",package="wtsQMD"));
+```
+
+<!-- figures, if not child doc and lstFigs is not empty -->
+```{r}
+#| label: figures_CFD
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));
+```
+

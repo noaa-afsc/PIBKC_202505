@@ -1,0 +1,490 @@
+---
+title: "Model for Survey MMB Estimation"
+author: "William T. Stockhausen"
+institute: NOAA/NMFS/AFSC
+date: '`r format(Sys.time(), "%b %e, %Y")`'
+fontsize: 11pt 
+number-sections: true
+reference-location: document
+reference-section-title: References
+#bibliography: bib_References.bib
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format: 
+  html: 
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 8
+    fig-asp: 1.4
+    fig-dpi: 100
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+      - file: ../Text/ltx_ExtraLatexIncludes.tex
+echo: false
+warning: false
+results: 'hide'
+keep-md: false
+keep-yaml: false
+editor: source
+editor_options: 
+  chunk_output_type: console
+concordance: true
+params:
+  setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
+  testing: false
+---
+<!-- IMPORTANT: if used as a child doc, all chunk labels must be unique within the overall document -->
+
+<!-- 
+  NOTEs: 
+     * child_path$peek() gives path to current script.
+     * before starting a child document, do 
+         "child_path$push(file.path(child_path$peek(),rel_path))" first, 
+         where rel_path is the relative path to the child
+     * after a child document has finished, do "child_path$pop()" to return to current path value
+-->
+
+### MMB at the time of the survey {#sec-SurveyMMBResults}
+
+<!-- if not child doc, set up required objects -->
+```{r}
+#| label: SrvMMB_setup
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: "asis"
+  if (!exists("testing")) testing = params$testing;
+  if (testing) cat(params$setup,"\n\n")
+  source(params$setup);
+  if (testing) {
+    cat("In SrvMMB_setup:\n\n")
+    cat("root = ",root,"\n\n");
+    cat("peek = '",child_path$peek(),"'\n\n",sep="");
+  }
+```
+
+```{r}
+#| label: setup_SrvMMB
+#| results: 'asis'
+  require(ggplot2);
+  require(kableExtra);
+  require(tables);
+  Sum = wtsUtilities::Sum;
+  old_thm = ggplot2::theme_set(cowplot::theme_cowplot(font_size = 10) +
+                               cowplot::background_grid() +
+                               cowplot::panel_border());
+  thm = wtsPlots::getStdTheme();
+  options("readr.show_col_types"=FALSE);
+  if (testing) cat("dirThs =",child_path$peek(),"\n\n")
+  if (!exists("s")){
+    fn = file.path(child_path$peek(),"../rda_AssessmentSetup.RData");
+    if (child_path$peek()=="") fn = file.path(rstudioapi::getActiveProject(),
+                                              "rda_AssessmentSetup.RData")
+    s = wtsUtilities::getObj(fn);
+  }
+  rwr  = wtsUtilities::getObj(s$fnSrvMMB);
+```
+
+```{r}
+#| label: get_RW_fit
+#| output: false
+  #--results from last assessment
+  dfr_last = rwr$dfrSrvMMB_last;
+  #--results from rema model fits
+  remas = rwr$remas;
+  #--get final gradients
+  lst = list();
+  for (opt in names(remas)) 
+    lst[[opt]] = tibble::tibble(option=opt,
+                                maxgrad=max(abs(remas[[opt]]$rema_mdl$final_gradient)));   
+  dfrMxG = dplyr::bind_rows(lst); rm(lst);
+  #--get model parameters
+  lst = list();
+  for (opt in names(remas)) 
+    lst[[opt]] = remas[[opt]]$tdy_rema$parameter_estimates |> dplyr::mutate(option=opt);
+  dfrPRS  = dplyr::bind_rows(lst); rm(lst);
+  #--get survey estimates of interest
+  lst = list();
+  for (opt in names(remas)) {
+    #--missing survey estimate
+    idx = which(remas[[opt]]$tdy_rema$total_predicted_biomass$year==2020);#--missing survey
+    mmb2020 = remas[[opt]]$tdy_rema$total_predicted_biomass$pred[idx];
+    lci2020 = remas[[opt]]$tdy_rema$total_predicted_biomass$pred_lci[idx];
+    uci2020 = remas[[opt]]$tdy_rema$total_predicted_biomass$pred_uci[idx];
+    #--terminal year estimate
+    mmbTM   = dplyr::last(remas[[opt]]$tdy_rema$total_predicted_biomass$pred);
+    lciTM   = dplyr::last(remas[[opt]]$tdy_rema$total_predicted_biomass$pred_lci);
+    uciTM   = dplyr::last(remas[[opt]]$tdy_rema$total_predicted_biomass$pred_uci);
+    lst[[opt]] = tibble::tibble(mmb2020=mmb2020,lci2020=lci2020,uci2020,
+                                mmbTM=mmbTM,lciTM=lciTM,uciTM=uciTM,option=opt);
+    rm(mmb2020,lci2020,uci2020,mmbTM,lciTM,uciTM);
+  }
+  lstEsts=lst; rm(lst,opt);
+```
+
+```{r}
+#| label: tbl-MaxGrads
+  dfrMxG$maxgrad = wtsQMD::num(dfrMxG$maxgrad,d=2,n=2,sci=TRUE);
+  kbl = kableExtra::kbl(dfrMxG |> dplyr::select(`zeros option`=option,`max gradient`=maxgrad),
+                        booktabs=TRUE,digits=2,format.args=list(scientific=TRUE,digits=4,nsmall=4)) |> 
+          kableExtra::kable_styling(bootstrap_options=c("striped","bordered"),
+                                    latex_options=c("striped","HOLD_position"));
+  lbl = wtsQMD::getLabel();
+  cap = 'Maximum objective function gradient after SS/RE RW model optimization, by "zeros option".';
+  lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+  rm(lbl,cap,kbl);
+```
+
+```{r}
+#| label: tbl-ParamEsts
+  if (!isHTM) dfrPRS = dfrPRS |> dplyr::mutate(parameter=wtsQMD::escapeChars(parameter));
+  tblr = tabular(Factor(parameter)~Factor(option)*DropEmpty(empty="--",which="cell")*
+                                     (estimate+lci+uci)*sum,
+                 data=dfrPRS);
+  colLabels(tblr) = colLabels(tblr)[c(2,3),];
+  kbl = wtsQMD::convert_tblr_to_kbl(tblr,col_spec=c(1,4,7),isHTM=isHTM);
+  lbl = wtsQMD::getLabel();
+  cap = 'Maximum objective function gradient after SS/RE RW model optimization, by "zeros option".';
+  lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+  rm(lbl,cap,kbl);
+```
+
+All three SS/RE RW models for survey MMB achieved acceptable maximum gradients and are considered to have converged ([@tbl-MaxGrads]). Estimated process errors, $\phi$, are similar between the three SS/RE RW models and appear reasonable ([@tbl-ParamEsts]). Given that the Tweedie parameter is limited to the range [1,2], the confidence interval associated with its estimate indicates the parameter may not be well-estimated ([@tbl-ParamEsts]). The MCMC results for the ln-scale process error (i.e., $\lambda$ ), the ln-scale terminal year survey year, and the arithmetic-scale terminal year survey biomass (Figures [-@fig-MCMC-logPE1]-[-@fig-MCMC-TB2]) do not indicate any issues with the non-Tweedie models. MCMC results were not produced for the model using the Tweedie option; the MCMC process was terminated after running for 24 hours without completion (MCMC for the Tweedie option is known to take a long time for some models; Jane Sullivan, AFSC, pers. comm.).
+
+The SS/RE RW models appear to fit the survey MMB data well through most of the time series, but the "zeros as NAs" and "Tweedie" models do not fit the declining trend in the data during the final two years (Tables [-@tbl-RW1]-[-@tbl-RW3]; Figures [-@fig-RW_results1]-[-@fig-RW_results2]). One-step-ahead (OSA) residuals are shown in Figures [-@fig-OSAs1] and [-@fig-OSAs2] for the non-"Tweedie" models; OSAs for the **rema** model are considered an improved method over Pearson's residuals for assessing model fit. The OSA residuals are slightly negative.
+
+```{r}
+#| label: fig-MCMC-logPE1
+  plt = wtsMCMC::mcmcTMB_PlotParamDiagnostics(rwr$remas[[1]]$mcmc,"log_PE");
+  lbl = wtsQMD::getLabel();
+  cap = paste0('MCMC diagnostics for the ln-scale process error parameter from the ',
+               '"zeros as NAs" model. ',
+               "Top row: trace plot; center row: autocorrelation plot; ",
+               "bottom row: histogram (left) and estimated posterior density with ",
+               "median (vertical line) and 80% confidence interval (shading). ",
+               "rHat (<1.05) and ESS (>100) are measures of acceptable MCMC mixing.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=plt,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(plt,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-MCMC-logPE2
+  plt = wtsMCMC::mcmcTMB_PlotParamDiagnostics(rwr$remas[[2]]$mcmc,"log_PE");
+  lbl = wtsQMD::getLabel();
+  cap = paste0('MCMC diagnostics for the ln-scale process error parameter from the ',
+               '"small constant" model. ',
+               "Top row: trace plot; center row: autocorrelation plot; ",
+               "bottom row: histogram (left) and estimated posterior density with ",
+               "median (vertical line) and 80% confidence interval (shading). ",
+               "rHat (<1.05) and ESS (>100) are measures of acceptable MCMC mixing.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=plt,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(plt,lbl,cap,pth);
+```
+
+
+```{r}
+#| label: fig-MCMC-logTB1
+  plt = wtsMCMC::mcmcTMB_PlotParamDiagnostics(rwr$remas[[1]]$mcmc,
+                                              paste0("log_biomass_pred[",rwr$remas[[1]]$tdy_mxIdx,"]"),
+                                              label="ln-scale terminal survey MMB");
+  lbl = wtsQMD::getLabel();
+  cap = paste0('MCMC diagnostics for the ln-scale terminal year survey MMB from the ',
+               '"zeros as NAs" model. ',
+               "Top row: trace plot; center row: autocorrelation plot; ",
+               "bottom row: histogram (left) and estimated posterior density with ",
+               "median (vertical line) and 80% confidence interval (shading). ",
+               "rHat (<1.05) and ESS (>100) are measures of acceptable MCMC mixing.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=plt,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(plt,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-MCMC-logTB2
+  plt = wtsMCMC::mcmcTMB_PlotParamDiagnostics(rwr$remas[[2]]$mcmc,
+                                              paste0("log_biomass_pred[",rwr$remas[[2]]$tdy_mxIdx,"]"),
+                                              label="ln-scale terminal survey MMB");
+  lbl = wtsQMD::getLabel();
+  cap = paste0('MCMC diagnostics for the ln-scale terminal year survey MMB from the ',
+               '"small constant" model. ',
+               "Top row: trace plot; center row: autocorrelation plot; ",
+               "bottom row: histogram (left) and estimated posterior density with ",
+               "median (vertical line) and 80% confidence interval (shading). ",
+               "rHat (<1.05) and ESS (>100) are measures of acceptable MCMC mixing.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=plt,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(plt,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-MCMC-TB1
+  plt = wtsMCMC::mcmcTMB_PlotParamDiagnostics(rwr$remas[[1]]$dfrPDs,
+                                              paste0("biomass_pred[",rwr$remas[[1]]$tdy_mxIdx,"]"),
+                                              label="terminal survey MMB (t)");
+  lbl = wtsQMD::getLabel();
+  cap = paste0('MCMC diagnostics for the terminal year survey MMB from the ',
+               '"zeros as NAs" model. ',
+               "Top row: trace plot; center row: autocorrelation plot; ",
+               "bottom row: histogram (left) and estimated posterior density with ",
+               "median (vertical line) and 80% confidence interval (shading). ",
+               "rHat (<1.05) and ESS (>100) are measures of acceptable MCMC mixing.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=plt,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(plt,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-MCMC-TB2
+  plt = wtsMCMC::mcmcTMB_PlotParamDiagnostics(rwr$remas[[2]]$dfrPDs,
+                                              paste0("biomass_pred[",rwr$remas[[2]]$tdy_mxIdx,"]"),
+                                              label="terminal survey MMB");
+  lbl = wtsQMD::getLabel();
+  cap = paste0('MCMC diagnostics for the terminal year survey MMB from the ',
+               '"small constant" model. ',
+               "Top row: trace plot; center row: autocorrelation plot; ",
+               "bottom row: histogram (left) and estimated posterior density with ",
+               "median (vertical line) and 80% confidence interval (shading). ",
+               "rHat (<1.05) and ESS (>100) are measures of acceptable MCMC mixing.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=plt,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(plt,lbl,cap,pth);
+```
+
+```{r}
+#| label: tbl-RW1
+  tdy = rwr$remas[[1]]$tdy_rema;
+  #--create table for output
+  tbl = dplyr::bind_rows(
+          tdy$biomass_by_strata |> dplyr::mutate(type="observed") |> 
+            dplyr::select(type,year,value=obs,lci=obs_lci,uci=obs_uci),
+          dfr_last |> dplyr::mutate(type="base") |> 
+             dplyr::select(type,year,value=pred,lci=pred_lci,uci=pred_uci),
+          tdy$biomass_by_strata |> dplyr::mutate(type="model") |> 
+            dplyr::select(type,year,value=pred,lci=pred_lci,uci=pred_uci)
+        ) |> 
+        dplyr::mutate(type=factor(type,levels=c("observed","base","model")))
+  tblr = tabular(Factor(year)~DropEmpty("--","cell") * Format(digits=2,scientific=FALSE) * 
+                               (Heading("estimate") * Factor(type) * value*mean + 
+                                Heading("lci")   * Factor(type) * lci*mean + 
+                                Heading("uci")   * Factor(type) * uci*mean),
+                 data=tbl);
+  colLabels(tblr) = colLabels(tblr)[c(3,2),];
+  colLabels(tblr)[1,] = c("","value","","","lci","","","uci","");
+  kbl = wtsQMD::convert_tblr_to_kbl(tblr,isHTM=isHTM,col_spec=c(1,4,7))
+  lbl = getLabel();
+  cap = paste0('"Zeros as NAs" model fits to mature male survey biomass (in t). ',
+               "lci: lower confidence bound; uci: upper confidence bound; ",
+               "observed: design-based survey estimates; base: model results from last assessment; ",
+               'model: "Zeros as NAs" model results. Confidence intervals are 80%.');
+  lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+  rm(lbl,cap,kbl);
+  rm(tbl,tblr)
+```
+
+```{r}
+#| label: tbl-RW2a
+  tdy = rwr$remas[[2]]$tdy_rema;
+  #--create table for output
+  tbl = dplyr::bind_rows(
+          tdy$biomass_by_strata |> dplyr::mutate(type="observed") |> 
+            dplyr::select(type,year,value=obs,lci=obs_lci,uci=obs_uci),
+          dfr_last |> dplyr::mutate(type="base") |> 
+             dplyr::select(type,year,value=pred,lci=pred_lci,uci=pred_uci),
+          tdy$biomass_by_strata |> dplyr::mutate(type="model") |> 
+            dplyr::select(type,year,value=pred,lci=pred_lci,uci=pred_uci)
+        ) |> 
+        dplyr::mutate(type=factor(type,levels=c("observed","base","model")))
+  tblr = tabular(Factor(year)~DropEmpty("--","cell") * Format(digits=2,scientific=FALSE) * 
+                               (Heading("estimate") * Factor(type) * value*mean + 
+                                Heading("lci")   * Factor(type) * lci*mean + 
+                                Heading("uci")   * Factor(type) * uci*mean),
+                 data=tbl |> dplyr::filter(year<2020));
+  colLabels(tblr) = colLabels(tblr)[c(3,2),];
+  colLabels(tblr)[1,] = c("","value","","","lci","","","uci","");
+  kbl = wtsQMD::convert_tblr_to_kbl(tblr,isHTM=isHTM,col_spec=c(1,4,7),ltx_font_size=10,adjColSpacing=-3)
+  lbl = getLabel();
+  cap = paste0('"Small constant" model fits to mature male survey biomass (in t; 1975-2019). ',
+               "lci: lower confidence bound; uci: upper confidence bound; ",
+               "observed: design-based survey estimates; base: model results from last assessment; ",
+               'model: "small constant" model results. Confidence intervals are 80%.');
+  lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+  rm(lbl,cap,kbl);
+```
+
+```{r}
+#| label: tbl-RW2b
+  tblr = tabular(Factor(year)~DropEmpty("--","cell") * Format(digits=2,scientific=FALSE) * 
+                               (Heading("estimate") * Factor(type) * value*mean + 
+                                Heading("lci")   * Factor(type) * lci*mean + 
+                                Heading("uci")   * Factor(type) * uci*mean),
+                 data=tbl |> dplyr::filter(year>2019));
+  colLabels(tblr) = colLabels(tblr)[c(3,2),];
+  colLabels(tblr)[1,] = c("","value","","","lci","","","uci","");
+  kbl = wtsQMD::convert_tblr_to_kbl(tblr,isHTM=isHTM,col_spec=c(1,4,7),ltx_font_size=10,adjColSpacing=-3)
+  lbl = getLabel();
+  cap = paste0('"Small constant" model fits to mature male survey biomass (in t; 2020-2023). ',
+               "lci: lower confidence bound; uci: upper confidence bound; ",
+               "observed: design-based survey estimates; base: model results from last assessment; ",
+               'model: "small constant" model results. Confidence intervals are 80%.');
+  lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+  rm(lbl,cap,kbl);
+  rm(tbl,tblr)
+```
+```{r}
+#| label: tbl-RW3
+  tdy = rwr$remas[[3]]$tdy_rema;
+  #--create table for output
+  tbl = dplyr::bind_rows(
+          tdy$biomass_by_strata |> dplyr::mutate(type="observed") |> 
+            dplyr::select(type,year,value=obs,lci=obs_lci,uci=obs_uci),
+          dfr_last |> dplyr::mutate(type="base") |> 
+             dplyr::select(type,year,value=pred,lci=pred_lci,uci=pred_uci),
+          tdy$biomass_by_strata |> dplyr::mutate(type="model") |> 
+            dplyr::select(type,year,value=pred,lci=pred_lci,uci=pred_uci)
+        ) |> 
+        dplyr::mutate(type=factor(type,levels=c("observed","base","model")))
+  tblr = tabular(Factor(year)~DropEmpty("--","cell") * Format(digits=2) * 
+                               (Heading("estimate") * Factor(type) * value*mean + 
+                                Heading("lci")   * Factor(type) * lci*mean + 
+                                Heading("uci")   * Factor(type) * uci*mean),
+                 data=tbl);
+  colLabels(tblr) = colLabels(tblr)[c(3,2),];
+  colLabels(tblr)[1,] = c("","value","","","lci","","","uci","");
+  kbl = wtsQMD::convert_tblr_to_kbl(tblr,isHTM=isHTM,col_spec=c(1,4,7))
+  lbl = getLabel();
+  cap = paste0('"Tweedie" model fits to mature male survey biomass (in t). ',
+               "lci: lower confidence bound; uci: upper confidence bound; ",
+               "observed: design-based survey estimates; base: model results from last assessment; ",
+               'model: "Tweedie" model results. Confidence intervals are 80%.');
+  lstTbls[[lbl]] = list(lbl=lbl,cap=cap,tbl=kbl);
+  rm(lbl,cap,kbl);
+  rm(tbl,tblr)
+```
+
+```{r}
+#| label: fig-RW_results1
+  # plts = rema::plot_rema(rwr$tdy_rema);
+  # #----observed + predicted
+  # p = plts$biomass_by_strata + 
+  #         geom_ribbon(data=rwr$dfrSrvMMB_last,mapping=aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci),
+  #                     colour=NA,fill="red",alpha=0.5,inherit.aes=FALSE) + 
+  #         geom_line(data=rwr$dfrSrvMMB_last,mapping=aes(x=year,y=pred),colour="red",inherit.aes=FALSE) + 
+  #         thm;       
+  # p1 = p + ylab("Biomass (t)");
+  # p2 = p + ylab("Biomass (t)") + scale_y_log10();
+  # pg = cowplot::plot_grid(p1,p2,ncol=1);
+  pg = rwr$compareOpts(rwr$dfrPrds,ymax=50000,
+                       dfrLast=rwr$dfrSrvMMB_last)
+  lbl = getLabel();
+  cap = paste0("Results for the random walk model fits to mature survey biomass. ",
+               "Design-based estimates: points and error bars; last assessment: red line + red shading; ",
+               "current assessment: indicated colored lines + shading. ",
+               "Upper plot: arithmetic scale; lower plot: log-scale. Confidence intervals are 80%.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=pg,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,p1,p2,plts,pg,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-RW_results2
+  # plts = rema::plot_rema(rwr$tdy_rema);
+  # #----observed + predicted
+  # p = plts$biomass_by_strata + 
+  #         geom_ribbon(data=rwr$dfrSrvMMB_last,mapping=aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci),
+  #                     colour=NA,fill="red",alpha=0.5,inherit.aes=FALSE) + 
+  #         geom_line(data=rwr$dfrSrvMMB_last,mapping=aes(x=year,y=pred),colour="red",inherit.aes=FALSE) + 
+  #         thm;       
+  # p1 = p + ylab("Biomass (t)");
+  # p2 = p + ylab("Biomass (t)") + scale_y_log10();
+  # pg = cowplot::plot_grid(p1,p2,ncol=1);
+  pg = rwr$compareOpts(rwr$dfrPrds |> dplyr::filter(year>=2010),ymax=700,
+                       dfrLast=rwr$dfrSrvMMB_last |> dplyr::filter(year>=2010))
+  lbl = getLabel();
+  cap = paste0("Results for the random walk model fits to mature survey biomass, showing recent time period. ",
+               "Design-based estimates: points and error bars (to 700 t); ",
+               "last assessment: red line + red shading; ",
+               "current assessment: indicated colored lines + shading. ",
+               "Upper plot: arithmetic scale; lower plot: log-scale. Confidence intervals are 80%.");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=pg,width=def_wid,height=8,units="in",dpi=def_dpi);
+  rm(p,p1,p2,plts,pg,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-OSAs1
+  pg = rwr$plotOSAs(rwr$remas[[1]]$osas);
+  lbl = wtsQMD::getLabel();
+  cap = paste0('One-step-ahead (OSA) residual diagnostic plots for the "zeros as NAs" random walk model. ',
+               "Upper left: OSA residuals vs. year; ",
+               "Upper right: OSA residuals vs. fitted values; ",
+               "Lower left: histogram and kernel density of the OSA residuals; ",
+               "Lower right: qqplot for the OSA residuals;");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=pg,width=def_wid,height=6.5,units="in",dpi=def_dpi);
+  rm(p1,p2,p3,p4,pg1,pg2,pg,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig-OSAs2
+  pg = rwr$plotOSAs(rwr$remas[[2]]$osas);
+  lbl = wtsQMD::getLabel();
+  cap = paste0('One-step-ahead (OSA) residual diagnostic plots for the "small constant" random walk model. ',
+               "Upper left: OSA residuals vs. year; ",
+               "Upper right: OSA residuals vs. fitted values; ",
+               "Lower left: histogram and kernel density of the OSA residuals; ",
+               "Lower right: qqplot for the OSA residuals;");
+  pth = wtsQMD::getFigFN();
+  lstFigs[[lbl]] = list(lbl=lbl,cap=cap,pth=pth,wid=def_wid,dpi=def_dpi);
+  ggsave(pth,plot=pg,width=def_wid,height=6.5,units="in",dpi=def_dpi);
+  rm(p1,p2,p3,p4,pg1,pg2,pg,lbl,cap,pth);
+```
+
+```{r}
+#| label: tables_SrvMMB
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printTablesSectionFromList.R",package="wtsQMD"));
+```
+
+<!-- figures, if not child doc and lstFigs is not empty -->
+```{r}
+#| label: figures_SrvMMB
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));
+```
+
