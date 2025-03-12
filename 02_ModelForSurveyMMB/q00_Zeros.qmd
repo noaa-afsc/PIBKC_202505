@@ -264,7 +264,7 @@ Using the formulae above for mature males in 2024 with $p=0.5$ (i.e., 50% chance
   lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
 
-The total abundance and biomass corresponding to densities yielding a non-detection probability of 0.5, given the number of survey hauls performed each year, are below the estimated total abundance/biomass (solid black line, Figures [-@fig-NumHlsAbd] and [-@fig_NumHlsBio]) in every year except 2008, when only 1 mature male was caught, and 2023 and 2024 (when, of course, no crabs were caught). Reducing the non-detection probability to 0.2 increases the number of years the estimated survey abundance exceeds the non-detection total abundance by 1 (2022), while it increases the corresponding value for biomass by 2 (2004, 2022). Increasing the non-detection probability to 0.8 results in no years other than 2023 and 2024 in which the estimated survey abundance or biomass is less than the non-detection abundance/biomass.
+The total abundance and biomass corresponding to densities yielding a non-detection probability of 0.5, given the number of survey hauls performed each year, are below the estimated total abundance/biomass (solid black line, Figures [-@fig-EstAbdWithNDPs] and [-@fig-EstBioWithNDPs]) in every year except 2008, when only 1 mature male was caught, and 2023 and 2024 (when, of course, no crabs were caught). Reducing the non-detection probability to 0.2 increases the number of years the estimated survey abundance exceeds the non-detection total abundance by 1 (2022), while it increases the corresponding value for biomass by 2 (2004, 2022). Increasing the non-detection probability to 0.8 results in no years other than 2023 and 2024 in which the estimated survey abundance or biomass is less than the non-detection abundance/biomass.
 
 ```{r}
   #--calculate densities and equivalent total abundance and biomass----
@@ -285,7 +285,7 @@ The total abundance and biomass corresponding to densities yielding a non-detect
 ```
 
 ```{r}
-#| label: fig_NumHlsAbd
+#| label: fig_EstAbdWithNDPs
 #| results: asis
 #| fig-width: 6.5 
 #| fig-asp: 0.5
@@ -308,7 +308,7 @@ The total abundance and biomass corresponding to densities yielding a non-detect
 ```
 
 ```{r}
-#| label: fig_NumHlsBio
+#| label: fig_EstBioWithNDPs
 #| results: asis
 #| fig-width: 6.5 
 #| fig-asp: 0.5
@@ -401,7 +401,7 @@ The total abundance and biomass corresponding to densities yielding a non-detect
     #--prepare rema input
     inp = rema::prepare_rema_input(
                   model_name="rema",
-                  end_year=assmt_yr,
+                  end_year=wtsQMD::last(dfr$year),
                   biomass_dat=tibble::tibble(strata="Pribilof Islands",
                                              year=dfr$year,
                                              biomass=dfr$value,
@@ -416,7 +416,7 @@ The total abundance and biomass corresponding to densities yielding a non-detect
                          do.check=TRUE,
                          do.fit=TRUE,
                          save.sdrep=TRUE,
-                         MakeADFun.silent=FALSE);
+                         MakeADFun.silent=TRUE);
     resLst$rema_mdl = mdl;
   
     #--tidy up the model results
@@ -437,10 +437,12 @@ The total abundance and biomass corresponding to densities yielding a non-detect
   
     if (testing) print(tdy$parameter_estimates);
   
-    #--get one-step-ahead residuals
-    osas = rema::get_osa_residuals(mdl);
-    resLst$osas = osas;
-    if (testing) print(plotOSAs(osas));
+    if (tolower(zeros$assumption)!="tweedie"){
+      #--get one-step-ahead residuals
+      osas = rema::get_osa_residuals(mdl);
+      resLst$osas = osas;
+      if (testing) print(plotOSAs(osas));
+    }
   
     #--do MCMC analysis
     if (doMCMC){
@@ -472,65 +474,205 @@ The total abundance and biomass corresponding to densities yielding a non-detect
   }
 ```
 
-```{r}
-#--list of rema models and results----
-lstAll$remas = list();
-zeros1 = list(assumption = 'NA');
-zeros2 = list(assumption = 'small_constant',
-              options_small_constant = c(0.01, 1.5)); # values: 1) small constant, 2) assumed CV
-zeros3 = list(assumption = 'tweedie',
-              options_tweedie=list(zeros_cv=1.5));
-
-opt1 = "0's as NAs";
-opt2 = "small constant";
-opt3 = "Tweedie";
-lstAll$remas[[opt1]] = runREMA(opt1,dfr,zeros=zeros1);
-lstAll$remas[[opt2]] = runREMA(opt2,dfr,zeros=zeros2);
-lstAll$remas[[opt3]] = runREMA(opt3,dfr,zeros=zeros3,doMCMC=FALSE);#--mcmc very slow
-
-#--compare model estimates----
-require(ggplot2)
-lstTmp = list();
-for (opt in names(lstAll$remas)){
-  #--testing: opt = names(lstAll$remas)[1];
-  rma = lstAll$remas[[opt]];
-  lstTmp[[opt]] = rma$dfrSrvMMB |> dplyr::mutate(option=opt);
-}
-dfrTmp = dplyr::bind_rows(lstTmp); rm(lstTmp);
-compareOpts<-function(dfrTmp,ymax=NA,dfrLast=NULL){
-  dfrDat = dfrTmp |> dplyr::distinct(year,obs,obs_lci,obs_uci);
-  p1 = ggplot(dfrTmp,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
-        geom_errorbar(data=dfrDat,mapping=aes(x=year,y=obs,ymin=obs_lci,ymax=obs_uci),inherit.aes=FALSE) +
-        geom_point(data=dfrDat,mapping=aes(x=year,y=obs),inherit.aes=FALSE);
-  if (!is.null(dfrLast)){
-    p1 = p1 +
-          geom_ribbon(data=dfrLast,mapping=aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci),
-                      colour=NA,fill="red",alpha=0.5,inherit.aes=FALSE) +
-          geom_line(data=dfrLast,mapping=aes(x=year,y=pred),colour="red",inherit.aes=FALSE)
+```{r Zeros_RunREMA}
+##--create (or read in) list for rema models and results----
+if (FALSE){
+  lstAll = list();
+  lstAll$remas = list();
+  
+  ##--define "standard" models----
+  opt1 = "LN w/ 0's as NAs";
+  opt2 = "LN w/ small constant";
+  opt3 = "Tweedie w/ CV=1.5";
+  zeros1 = list(assumption = 'NA');
+  zeros2 = list(assumption = 'small_constant',
+                options_small_constant = c(0.01, 1.5)); # values: 1) small constant, 2) assumed CV
+  zeros3 = list(assumption = 'tweedie',
+                options_tweedie=list(zeros_cv=1.5));
+  ##--run standard models----
+  dfrp = dfr |> dplyr::select(year,value=totBio,cv=cvBio);
+  lstAll$remas[[opt1]] = runREMA(opt1,dfrp,zeros=zeros1,doMCMC=FALSE);
+  lstAll$remas[[opt2]] = runREMA(opt2,dfrp,zeros=zeros2,doMCMC=FALSE);
+  lstAll$remas[[opt3]] = runREMA(opt3,dfrp,zeros=zeros3,doMCMC=FALSE);#--mcmc very slow
+  
+  ##--substitute zeros with biomass for non-detection probability 0.5
+  dfpp = dfp |> dplyr::select(year,value=totBio,cv=cvBio,b50,cvD50) |> 
+            dplyr::mutate(cv=ifelse(value>0,cv,cvD50),
+                          value=ifelse(value>0,value,b50)) |> #--need to do this last
+            dplyr::select(year,value,cv);
+  opt4 = "LN w/ p=0.5"
+  opt5 = "Tweedie w/ p=0.5";
+  lstAll$remas[[opt4]] = runREMA(opt4,dfpp,zeros=zeros1,doMCMC=FALSE);
+  lstAll$remas[[opt5]] = runREMA(opt5,dfpp,zeros=zeros3,doMCMC=FALSE);#--mcmc very slow
+  
+  #--compare model estimates----
+  require(ggplot2)
+  lstTmp = list();
+  for (opt in names(lstAll$remas)){
+    #--testing: opt = names(lstAll$remas)[1];
+    rma = lstAll$remas[[opt]];
+    lstTmp[[opt]] = rma$dfrSrvMMB |> dplyr::mutate(option=opt);
   }
-  p1 = p1 +
-        geom_ribbon(alpha=0.5,colour=NA) + geom_line() +
-        scale_y_continuous(limits=c(0,ymax),oob=scales::squish) +
-        scale_fill_viridis_d(aesthetics=c("fill","colour")) +
-        labs(y="biomass (t)") +
-        theme(legend.position=c(0.99,0.99),
-              legend.justification=c(1,1)) +
-        wtsPlots::getStdTheme();
-  p2 = p1 + scale_y_log10();
-  pg = cowplot::plot_grid(p1+theme(axis.title.x=element_blank()),
-                          p2+theme(legend.position="none"),
-                          ncol=1);
-  return(pg);
+  dfrTmp = dplyr::bind_rows(lstTmp); rm(lstTmp);
+  compareOpts<-function(dfrTmp,ymax=NA,dfrLast=NULL){
+    dfrDat = dfrTmp |> dplyr::distinct(year,obs,obs_lci,obs_uci);
+    p1 = ggplot(dfrTmp,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
+          geom_errorbar(data=dfrDat,mapping=aes(x=year,y=obs,ymin=obs_lci,ymax=obs_uci),inherit.aes=FALSE) +
+          geom_point(data=dfrDat,mapping=aes(x=year,y=obs),inherit.aes=FALSE);
+    if (!is.null(dfrLast)){
+      p1 = p1 +
+            geom_ribbon(data=dfrLast,mapping=aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci),
+                        colour=NA,fill="red",alpha=0.5,inherit.aes=FALSE) +
+            geom_line(data=dfrLast,mapping=aes(x=year,y=pred),colour="red",inherit.aes=FALSE)
+    }
+    p1 = p1 +
+          geom_ribbon(alpha=0.5,colour=NA) + geom_line() +
+          scale_y_continuous(limits=c(0,ymax),oob=scales::squish) +
+          scale_fill_viridis_d(aesthetics=c("fill","colour")) +
+          labs(y="biomass (t)") +
+          theme(legend.position=c(0.99,0.99),
+                legend.justification=c(1,1)) +
+          wtsPlots::getStdTheme();
+    p2 = p1 + scale_y_log10();
+    pg = cowplot::plot_grid(p1+theme(axis.title.x=element_blank()),
+                            p2+theme(legend.position="none"),
+                            ncol=1);
+    return(pg);
+  }
+  lstAll$compareOpts = compareOpts;
+  lstAll$dfrPrds = dfrTmp;
+  wtsUtilities::saveObj(lstAll,file.path(child_path$peek(),"rda_Zeros_REMA_Models.RData"));
+} else {
+  ##--read in previous results
+  lstAll = wtsUtilities::getObj(file.path(child_path$peek(),"rda_Zeros_REMA_Models.RData"));
+  compareOpts = lstAll$compareOpts;
+  opt1 = names(lstAll$remas)[1];
+  opt2 = names(lstAll$remas)[2];
+  opt3 = names(lstAll$remas)[3];
+  opt4 = names(lstAll$remas)[4];
+  opt5 = names(lstAll$remas)[5];
 }
-lstAll$compareOpts = compareOpts;
-lstAll$dfrPrds = dfrTmp;
-
-compareOpts(lstAll$dfrPrds,ymax=50000,
-            dfrLast=lstAll$dfrSrvMMB_last);
-compareOpts(lstAll$dfrPrds |> dplyr::filter(year>=2010))
-compareOpts(lstAll$dfrPrds |> dplyr::filter(year>=2010),
-            dfrLast=lstAll$dfrSrvMMB_last |> dplyr::filter(year>=2010));
 ```
+```{r}
+#| label: fig_CompareAll1
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+##--compare all----
+  p = compareOpts(lstAll$dfrPrds,ymax=50000,
+                  dfrLast=lstAll$dfrSrvMMB_last);
+  lbl = wtsQMD::getLabel();
+  cap = paste0("")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+```{r}
+#| label: fig_CompareAll2
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+##--compare all----
+  p = compareOpts(lstAll$dfrPrds |> dplyr::filter(year>=2010));
+  lbl = wtsQMD::getLabel();
+  cap = paste0("")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+```{r}
+#| label: fig_CompareLNs1
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  ##--compare lognormals----
+  dfrs = lstAll$dfrPrds |> dplyr::filter(option %in% c(opt2,opt4))
+  p = compareOpts(dfrs,ymax=50000,
+                  dfrLast=lstAll$dfrSrvMMB_last);
+  lbl = wtsQMD::getLabel();
+  cap = paste0("")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+```{r}
+#| label: fig_CompareLNs2
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  ##--compare lognormals----
+  p = compareOpts(dfrs |> dplyr::filter(year>=2010));
+  lbl = wtsQMD::getLabel();
+  cap = paste0("")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+
+```{r}
+#| label: fig_CompareTWs1
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  ##--compare Tweedies----
+  dfrs = lstAll$dfrPrds |> dplyr::filter(option %in% c(opt3,opt5))
+  p = compareOpts(dfrs,ymax=50000,
+                  dfrLast=lstAll$dfrSrvMMB_last);
+  lbl = wtsQMD::getLabel();
+  cap = paste0("")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+```{r}
+##--compare Tweedies----
+#| label: fig_CompareTWs2
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  p = compareOpts(dfrs |> dplyr::filter(year>=2010))
+  lbl = wtsQMD::getLabel();
+  cap = paste0("")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+
+```{r}
+##--compare p=0.5's----
+#| label: fig_ComparePs1
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  dfrs = lstAll$dfrPrds |> dplyr::filter(option %in% c(opt4,opt5))
+  p = compareOpts(dfrs,ymax=50000,
+                  dfrLast=lstAll$dfrSrvMMB_last);
+```
+```{r}
+#| label: fig_ComparePs2
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  ##--compare p=0.5's----
+  p = compareOpts(dfrs |> dplyr::filter(year>=2010))
+  lbl = wtsQMD::getLabel();
+  cap = paste0("")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+
+```{r}
+logit_tw_p = unname(lstAll$remas[["Tweedie w/ p=0.5"]]$rema_mdl$sdrep$par.fixed[2]);
+tw_p_LB = 1;#--lower arithmetic-scale bound
+tw_p_UB = 2;#--upper arithmetic-scale bound
+tw_p = tw_p_LB + (tw_p_UB-tw_p_LB)*1/(1+exp(-logit_tw_p));
+dfrRTs = tibble::tribble(~option,~time,
+                          opt1,lstAll$remas[[opt1]]$rema_mdl$runtime,
+                          opt2,lstAll$remas[[opt2]]$rema_mdl$runtime,
+                          opt3,lstAll$remas[[opt3]]$rema_mdl$runtime,
+                          opt4,lstAll$remas[[opt4]]$rema_mdl$runtime,
+                          opt5,lstAll$remas[[opt5]]$rema_mdl$runtime);
+```
+
+The model assuming a Tweedie error distribution and using the $p = 0.5$ criteria may not have converged (the max gradient was `r formatC(lstAll$remas[["Tweedie w/ p=0.5"]]$rema_mdl$final_gradient[2])` while the variance parameter was estimated essentially at its arithmetic upper bound (estimate = `r formatC(tw_p,digits=6)`, upper bound = 2). In addition, it took `r as.numeric(dfrRTs$time[5])` seconds for this model to converge as compared with < 1s for the other models.
+
+#  Recommendations
+
+
 
 ```{r}
 #| label: refs_Zeros
