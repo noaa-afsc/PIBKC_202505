@@ -1,5 +1,5 @@
 ---
-title: "A potential method for replacing zero catches in time series for REMA fitting"
+title: "A sampling distribution-based method for replacing zero catches in time series for REMA fitting"
 author: "William T. Stockhausen"
 institute: NOAA/NMFS/AFSC
 date: '`r format(Sys.time(), "%b %e, %Y")`'
@@ -50,12 +50,16 @@ format:
           \usepackage{placeins}
           \extrafloats{500}
           \maxdeadcycles=10000
-          \usepackage{nopageno}
+          \usepackage{fontspec}
+          \usepackage{multicol}
+          \usepackage{hhline}
+          \newlength\Oldarrayrulewidth
+          \newlength\Oldtabcolsep
       - file: '`r system.file("files/ltx_ExtraLatexIncludes.tex",package="wtsQMD")`'
 echo: false
 warning: false
 results: 'hide'
-keep-md: false
+keep-md: true
 keep-yaml: false
 editor: source
 editor_options: 
@@ -149,7 +153,7 @@ params:
   }
 ```
 
-Mature male abundance and biomass of Pribilof Islands blue king crab in the annual NMFS EBS bottom trawl survey has declined substantially since the survey was initiated in 1975 ([@fig-SrvAbdBio]), including zero catches at 86 and 70 survey stations in, respectively, the 2023 and 2024 surveys. The existence of zeros in the corresponding time series for design-based estimates of mature male biomass within the Pribilof Islands survey strata poses methodological difficulties for time series modeling approaches like `rema` [@rema] that model variability on the log scale. `rema` provides three options for dealing with zeros in an observed time series: 1) treat the zeros as missing data; 2) substitute a small, but arbitrary, value for the zeros; 3) assume an error distribution based on the Tweedie distribution. For the latter two options, an associated error CV (coefficient of variation) must also be specified. Lognormal error distributions are assumed under the first two options; using the Tweedie distribution has the advantage that it can synthetically fit zeros in the data, but at the cost of estimating an extra parameter (related to the variance) and is known to experience issues with convergence when finding the maximum likelihood.
+Mature male abundance and biomass of Pribilof Islands blue king crab in the annual NMFS EBS bottom trawl survey has declined substantially since the survey was initiated in 1975 ([@fig-SrvAbdBio]), including zero catches at 86 and 70 survey stations in, respectively, the 2023 and 2024 surveys. At low abundance, abundance appears to scale exponentially with the number of hauls at which mature males were caught ([@fig-Non0sByAbd]), The existence of zeros in the corresponding time series for design-based estimates of mature male biomass within the Pribilof Islands survey strata ([@fig-SurveyBasemap]) poses methodological difficulties for time series modeling approaches like `rema` [@rema] that model variability on the log scale. `rema` provides three options for dealing with zeros in an observed time series: 1) treat the zeros as missing data; 2) substitute a small, but arbitrary, value for the zeros; and 3) assume an error distribution based on the Tweedie distribution. For the latter two options, an associated error CV (coefficient of variation) must also be specified. Lognormal error distributions are assumed under the first two options; using the Tweedie distribution has the advantage that it can synthetically fit zeros in the data, but at the cost of estimating an extra parameter (related to the variance) and issues with convergence when optimizing the model (finding the maximum likelihood) may occur.
 
 ```{r}
 #| label: fig_SrvAbdBio
@@ -183,19 +187,19 @@ Mature male abundance and biomass of Pribilof Islands blue king crab in the annu
 #| fig-width: 6.5 
 #| fig-asp: 0.5
   ##--plot number of non-0 hauls by year----
-  p = ggplot(dfr,aes(x=year)) +
-        geom_line(aes(y=numNon0),colour="blue") + geom_point(aes(y=numNon0),colour="blue") +
-        scale_y_log10() +
-        labs(x="year",y="number of non-0 hauls") +
-        wtsPlots::getStdTheme();
-  lbl = wtsQMD::getLabel();
-  cap = paste0("The number of NMFS EBS survey hauls with non-zero catch of mature males, by year.")
-  pth = wtsQMD::getFigFN();
-  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+  # p = ggplot(dfr,aes(x=year)) +
+  #       geom_line(aes(y=numNon0),colour="blue") + geom_point(aes(y=numNon0),colour="blue") +
+  #       scale_y_log10() +
+  #       labs(x="year",y="number of non-0 hauls") +
+  #       wtsPlots::getStdTheme();
+  # lbl = wtsQMD::getLabel();
+  # cap = paste0("The number of NMFS EBS survey hauls with non-zero catch of mature males, by year.")
+  # pth = wtsQMD::getFigFN();
+  # lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
 
 ```{r}
-#| label: fig_Non0sbyAbd
+#| label: fig_Non0sByAbd
 #| results: asis
 #| fig-width: 6.5 
 #| fig-asp: 0.5
@@ -214,17 +218,51 @@ Mature male abundance and biomass of Pribilof Islands blue king crab in the annu
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
 
+```{r}
+#| label: fig_SurveyBasemap
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  gisPath = "~/Work/StockAssessments-Crab/Data/GIS/Shapefiles";
+  #----create EBS basemap
+  crsWGS84<-wtsGIS::get_crs("WGS84");
+  bbox = wtsGIS::getBBox(list(bottomleft=list(lon=-175,lat=55),
+                              topright  =list(lon=-166,lat=59)))
+  basemap = wtsGIS::gg_CreateBasemapLayers(bbox=bbox);
+  #--get survey grid layers
+  grid = (tcsamSurveyData::gisGetSurveyGridLayers()$grid) |> 
+           wtsGIS::cropFeaturesToBBox(bbox);
+
+  # #----create PI Habitat Conservation Area layers
+  # hca = wtsGIS::readShapefile(file.path(gisPath,
+  #                                       "ConservationAreas/pribilof_hca.shp"),
+  #                             crs=crsWGS84);#--no need to crop features
+  #--EBS survey grid
+  p = ggplot() + basemap +
+        geom_sf(data=grid,fill=NA) + 
+        geom_sf(data=lstSrv$evs.stns |> dplyr::filter(YEAR==2023),colour="blue",alpha=0.9);# + 
+        # geom_sf(data=hca,fill=NA,colour="orange",linewidth=1);
+  lbl = wtsQMD::getLabel();
+  cap = paste0("The NMFS EBS Shelf Survey survey grid cells (thin black lines) and nominal sampling stations (large dots) ",
+               'in the Pribilof District. The "high density" stations in the grid circles (16 stations) were dropped in 2024.');
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+  rm(p,lbl,cap,pth);
+```
+
 Survey sampling is conducted across a grid of stations, with one trawl haul conducted at each station, and estimates of area-level abundance (or biomass) are scaled up from the the average numbers (or biomass) caught in each haul to the area of the survey stratum. Because a typical area swept during a trawl haul is 0.012 square nautical miles (sq. nmi.) and the total stratum area for PIBKC is 28,070 sq. nmi, a single tow covers only about 0.00004% of the stratum area and 86 tows (the typical number conducted before 2024) covers only 0.0037%. The smallest non-zero value for estimated abundance, which occurred in 2008, is 18,256 mature males or 0.65 mature males/sq. nmi. (the result of 1 mature male caught in 1 haul, out of 86 conducted). Given the nature of the survey sampling, it is thus highly unlikely that mature male biomass was actually 0 in either 2023 or 2024 and that these values were the result of the type of sampling variability expected at low, but non-zero, densities. As such, the question for modeling the time series becomes what might be reasonable values to substitute for the zeros. 
 
 The approach proposed here calculates a density, $d$, consistent with a selected probability $p$ of non-detection (i.e., catching zero crab) in $K$ independent hauls, based on the assumption that crab are randomly-distributed across the survey stratum and hauls represent independent samples. Under the assumption that crab are randomly-distributed across the stratum, the number of crab, $N$, caught in a haul swept with area $A_s$ is a Poisson-distributed random variable with: 
 
 $$Pr(N=n|\lambda) = \frac {\lambda^n e^{-\lambda}} {n!}$$
+
 where $\lambda=d \cdot A_s$. The probability of non-detection (no crab are caught) in $K$ independent hauls is just: 
 
-$$ Pr(N=0|\text{K hauls}) = \prod_K e^{-\lambda} = e^{-K \cdot \lambda} $$ 
-Setting $p=Pr(N=0|\text{K hauls})$ and rearranging to solve for the density, $d$,, one obtains:
+$$ Pr(N=0|\text{K hauls}) = \prod_K e^{-\lambda} = e^{-K \cdot \lambda} $$ {#eq-PoissDist}
 
-$$d=-\frac{ln(p)}{K \cdot A_s} $$
+Setting $p=Pr(N=0|\text{K hauls})$ and rearranging to solve for the density, $d$, one obtains:
+
+$$d=-\frac{ln(p)}{K \cdot A_s} $$ {#eq-Density}
 
 The associated coefficient of variation (CV) can also be derived: for the sum of $K$ independently-distributed Poisson variables, the expected mean is $K \cdot \lambda$, as is the variance, so the CV ($=variance^{1/2}/mean$) is 
 
@@ -330,65 +368,6 @@ The total abundance and biomass corresponding to densities yielding a non-detect
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
 
-<!-- ```{r} -->
-<!--   ##--use median number of non-zero hauls for density calculation---- -->
-<!--   mdHls = median(dfr$numNon0); -->
-<!--   dfq = dfr |> dplyr::mutate(d20=calcDensity(0.2,mdHls,As), #--density in #/sq nmi -->
-<!--                              d50=calcDensity(0.5,mdHls,As), -->
-<!--                              d80=calcDensity(0.8,mdHls,As), -->
-<!--                              a20=area*d20/1000,  #--abundance (in 1,000's) expanded to total area -->
-<!--                              a50=area*d50/1000, -->
-<!--                              a80=area*d80/1000, -->
-<!--                              b20=area*d20*mmWgt, #--biomass (in t) expanded to total area -->
-<!--                              b50=area*d50*mmWgt, -->
-<!--                              b80=area*d80*mmWgt -->
-<!--                              ); -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- #| label: fig_MedN0Abd -->
-<!-- #| results: asis -->
-<!-- #| fig-width: 6.5  -->
-<!-- #| fig-asp: 0.5 -->
-<!--   p = ggplot(dfq,aes(x=year)) + -->
-<!--         geom_line(aes(y=totAbd),colour="blue") + geom_point(aes(y=totAbd),colour="blue") + -->
-<!--         geom_ribbon(aes(ymin=a80,ymax=a20),alpha=0.2) + -->
-<!--         geom_line(aes(y=a50)) + -->
-<!--         scale_y_log10() + -->
-<!--         labs(x="year",y="total abundance (1,000's)") + -->
-<!--         wtsPlots::getStdTheme(); -->
-<!--   lbl = wtsQMD::getLabel(); -->
-<!--   cap = paste0("The estimated time series of mature male total abundance from the NMFS survey ", -->
-<!--                "(blue line and points), with total abundance corresponding to probabilities ", -->
-<!--                "of zero catch of 0.5 (black line) and 0.8 and 0.2 (lower and upper bounds ", -->
-<!--                "of grey shading), based on the median number of non-zero hauls conducted ", -->
-<!--                "for PIBKC over the time series.") -->
-<!--   pth = wtsQMD::getFigFN(); -->
-<!--   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P")); -->
-<!-- ``` -->
-
-<!-- ```{r} -->
-<!-- #| label: fig_MedN0Bio -->
-<!-- #| results: asis -->
-<!-- #| fig-width: 6.5  -->
-<!-- #| fig-asp: 0.5 -->
-<!--   p = ggplot(dfq,aes(x=year)) + -->
-<!--         geom_line(aes(y=totBio),colour="blue") + geom_point(aes(y=totBio),colour="blue") + -->
-<!--         geom_ribbon(aes(ymin=b80,ymax=b20),alpha=0.2) + -->
-<!--         geom_line(aes(y=b50)) + -->
-<!--         scale_y_log10() + -->
-<!--         labs(x="year",y="total biomass (t)") + -->
-<!--         wtsPlots::getStdTheme(); -->
-<!--   lbl = wtsQMD::getLabel(); -->
-<!--   cap = paste0("The estimated time series of mature male total biomass from the NMFS survey ", -->
-<!--                "(blue line and points), with total biomass corresponding to probabilities ", -->
-<!--                "of zero catch of 0.5 (black line) and 0.8 and 0.2 (lower and upper bounds ", -->
-<!--                "of grey shading), based on the median number of non-zero hauls conducted ", -->
-<!--                "for PIBKC over the time series.") -->
-<!--   pth = wtsQMD::getFigFN(); -->
-<!--   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P")); -->
-<!-- ``` -->
-
 # `rema` results
 
 ```{r Zeros_defREMA}
@@ -408,6 +387,7 @@ The total abundance and biomass corresponding to densities yielding a non-detect
                                              cv=dfr$cv),
                   zeros = zeros)
     resLst$rema_inp = inp;
+    resLst$zeros    = zeros;
   
     #--fit the data
     mdl = rema::fit_rema(inp,
@@ -522,11 +502,11 @@ if (FALSE){
     if (!is.null(dfrLast)){
       p1 = p1 +
             geom_ribbon(data=dfrLast,mapping=aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci),
-                        colour=NA,fill="red",alpha=0.5,inherit.aes=FALSE) +
+                        colour=NA,fill="red",alpha=0.2,inherit.aes=FALSE) +
             geom_line(data=dfrLast,mapping=aes(x=year,y=pred),colour="red",inherit.aes=FALSE)
     }
     p1 = p1 +
-          geom_ribbon(alpha=0.5,colour=NA) + geom_line() +
+          geom_ribbon(alpha=0.2,colour=NA) + geom_line() +
           scale_y_continuous(limits=c(0,ymax),oob=scales::squish) +
           scale_fill_viridis_d(aesthetics=c("fill","colour")) +
           labs(y="biomass (t)") +
@@ -553,28 +533,72 @@ if (FALSE){
   opt5 = names(lstAll$remas)[5];
 }
 ```
+
+```{r Zeros_Make_Tbl_REMA_Models}
+  logit_tw_p = unname(lstAll$remas[["Tweedie w/ p=0.5"]]$rema_mdl$sdrep$par.fixed[2]);
+  tw_p_LB = 1;#--lower arithmetic-scale bound
+  tw_p_UB = 2;#--upper arithmetic-scale bound
+  tw_p = tw_p_LB + (tw_p_UB-tw_p_LB)*1/(1+exp(-logit_tw_p));
+  dfrRTs = tibble::tribble(~model,~`error distribution`,~`0's handling`,~`run time`,~`max gradient`,
+                            opt1,"lognormal","0's treated as missing (NA's)",
+                                 lstAll$remas[[opt1]]$rema_mdl$runtime,max(abs(lstAll$remas[[opt1]]$rema_mdl$final_gradient)),
+                            opt2,"lognormal","small constant (0.01) substituted with large CV",
+                                 lstAll$remas[[opt2]]$rema_mdl$runtime,max(abs(lstAll$remas[[opt2]]$rema_mdl$final_gradient)),
+                            opt3,"Tweedie","0 included, but with large CV",
+                                 lstAll$remas[[opt3]]$rema_mdl$runtime,max(abs(lstAll$remas[[opt3]]$rema_mdl$final_gradient)),
+                            opt4,"lognormal","Poisson-based; non-detection p = 0.5",
+                                 lstAll$remas[[opt4]]$rema_mdl$runtime,max(abs(lstAll$remas[[opt4]]$rema_mdl$final_gradient)),
+                            opt5,"Tweedie","Poisson-based; non-detection p = 0.5",
+                                 lstAll$remas[[opt5]]$rema_mdl$runtime,max(abs(lstAll$remas[[opt5]]$rema_mdl$final_gradient)));
+```
+
+Five `rema` models were run to compare results from using its standard options for dealing with time series 0's to the proposed distribution-based approach ([@tbl-REMA-Models]). The model that assumed a Tweedie error distribution and used the $p = 0.5$ non-detection criterion may not have converged (the max gradient was `r formatC(lstAll$remas[["Tweedie w/ p=0.5"]]$rema_mdl$final_gradient[2])` while the variance parameter was estimated essentially at its arithmetic upper bound (estimate = `r formatC(tw_p,digits=6)`, upper bound = 2). In addition, it took `r as.numeric(dfrRTs$time[5])` seconds for this model to converge as compared with < 1s for the other models.  
+
+```{r tbl_REMA-Models}
+#| results: asis
+  flx = flextable::as_flextable(dfrRTs |> dplyr::mutate(`max gradient`=formatC(`max gradient`,format="e")), 
+                                show_coltype=FALSE,max_row=100) |> 
+          flextable::delete_part("footer")|> 
+          flextable::fit_to_width(9);
+  cap = paste0("`rema` models, with timing and maximum gradient as reported for model convergence.");
+  lstTbls = c(lstTbls,
+              insertFlextableIntoQMD(flx,
+                                     lbl="tbl-REMA-Models", 
+                                     cap=cap,
+                                     ori="L"));
+```
+
+The results from the five models are compared in Figures [-@fig-CompareAll1]-[-@fig-ComparePs2]. Results from both the lognormal model that treated the 0's as missing values and the Tweedie model that included the 0's but assigned a large CV to the values were notable in that the estimated values for 2023 and 2024 were the same as the value for 2022, but with increasing uncertainty bounds. Results from the model that assumed a lognormal error distribution and substituted a small constant for the observed 0's stand out from the others both for the lager uncertainty intervals across the time series as well the substantial departure of its estimates in 2022-2024 from the others (particularly noticeable on the log-10 scale, Figures [-@fig-CompareAll2] and [-@fig-CompareLNs2]). Of the five, the lognormal error model that used the non-detection criterion exhibited the most satisfactory results: it fit the last non-zero observation better than any of the other models and did not exhibit any really questionable features. MCMC diagnostics for this model appear to be reasonable ([@fig-Zeros_MCMCDiags]). One-step ahead (OSA) residuals diagnostics ([@fig-Zeros_OSAs]) suggest that the model tends to overestimate the observed values. However, the diagnostics for this model are similar to those for the lognormal model that treats 0's as missing and much better than the lognormal model that substitutes a small constant  for the 0's (OSAs are not yet available for Tweedie models).
+
 ```{r}
 #| label: fig_CompareAll1
 #| results: asis
 #| fig-width: 6.5 
 #| fig-asp: 1.0
-##--compare all----
+  ##--compare all----
   p = compareOpts(lstAll$dfrPrds,ymax=50000,
                   dfrLast=lstAll$dfrSrvMMB_last);
   lbl = wtsQMD::getLabel();
-  cap = paste0("")
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               "mature males using the five error distributions and 0-substitution methods ",
+               "discussed in the text. Full time series results. ",
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
+
 ```{r}
 #| label: fig_CompareAll2
 #| results: asis
 #| fig-width: 6.5 
 #| fig-asp: 1.0
-##--compare all----
+  ##--compare all----
   p = compareOpts(lstAll$dfrPrds |> dplyr::filter(year>=2010));
   lbl = wtsQMD::getLabel();
-  cap = paste0("")
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               "mature males using the five error distributions and 0-substitution methods ",
+               "discussed in the text. Only results starting in 2010 to show detail at end of time series. ",
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
@@ -584,11 +608,14 @@ if (FALSE){
 #| fig-width: 6.5 
 #| fig-asp: 1.0
   ##--compare lognormals----
-  dfrs = lstAll$dfrPrds |> dplyr::filter(option %in% c(opt2,opt4))
+  dfrs = lstAll$dfrPrds |> dplyr::filter(option %in% c(opt1,opt2,opt4))
   p = compareOpts(dfrs,ymax=50000,
                   dfrLast=lstAll$dfrSrvMMB_last);
   lbl = wtsQMD::getLabel();
-  cap = paste0("")
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               "mature males using the lognormal error distributions and 0-substitution methods ",
+               "discussed in the text. Full time series results. ",
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
@@ -600,7 +627,10 @@ if (FALSE){
   ##--compare lognormals----
   p = compareOpts(dfrs |> dplyr::filter(year>=2010));
   lbl = wtsQMD::getLabel();
-  cap = paste0("")
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               "mature males using the lognormal error distributions and 0-substitution methods ",
+               "discussed in the text. Only results starting in 2010 to show detail at end of time series. ",
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
@@ -615,32 +645,49 @@ if (FALSE){
   p = compareOpts(dfrs,ymax=50000,
                   dfrLast=lstAll$dfrSrvMMB_last);
   lbl = wtsQMD::getLabel();
-  cap = paste0("")
-  pth = wtsQMD::getFigFN();
-  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
-```
-```{r}
-##--compare Tweedies----
-#| label: fig_CompareTWs2
-#| results: asis
-#| fig-width: 6.5 
-#| fig-asp: 1.0
-  p = compareOpts(dfrs |> dplyr::filter(year>=2010))
-  lbl = wtsQMD::getLabel();
-  cap = paste0("")
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               "mature males using the Tweedie error distributions and 0-substitution methods ",
+               'discussed in the text. Note that the "p=0.5" model was probably not converged. ',
+               'Full time series results. ',
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
 
 ```{r}
-##--compare p=0.5's----
+#| label: fig_CompareTWs2
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  ##--compare Tweedies----
+  p = compareOpts(dfrs |> dplyr::filter(year>=2010))
+  lbl = wtsQMD::getLabel();
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               "mature males using the Tweedie error distributions and 0-substitution methods ",
+               'discussed in the text. Note that the "p=0.5" model was probably not converged. ',
+               'Only results starting in 2010 to show detail at end of time series. ',
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+
+```{r}
 #| label: fig_ComparePs1
 #| results: asis
 #| fig-width: 6.5 
 #| fig-asp: 1.0
+  ##--compare p=0.5's----
   dfrs = lstAll$dfrPrds |> dplyr::filter(option %in% c(opt4,opt5))
   p = compareOpts(dfrs,ymax=50000,
                   dfrLast=lstAll$dfrSrvMMB_last);
+  lbl = wtsQMD::getLabel();
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               'mature males using the two error distributions and "p=0.5" substitution method ',
+               'discussed in the text. Note that the Tweedie model was probably not converged. ',
+               'Full time series results. ',
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
 ```{r}
 #| label: fig_ComparePs2
@@ -650,31 +697,83 @@ if (FALSE){
   ##--compare p=0.5's----
   p = compareOpts(dfrs |> dplyr::filter(year>=2010))
   lbl = wtsQMD::getLabel();
-  cap = paste0("")
+  cap = paste0("Comparison of the `rema` results from fitting the PIBKC survey biomass time series for ",
+               'mature males using the two error distributions and "p=0.5" substitution method ',
+               'discussed in the text. Note that the Tweedie model was probably not converged. ',
+               'Only results starting in 2010 to show detail at end of time series. ',
+               "Upper figure: arithmetic scale; lower figure: log-10 scale.")
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
+```
+
+```{r Zeros_RunPreferred}
+  ##--run MCMC on best model----
+  best = opt4;
+  if (FALSE){
+    dfrp = lstAll$remas[[best]]$dfrSrvMMB|> dplyr::select(year,value=obs,cv=obs_cv);
+    bestREMA = runREMA(best,dfrp,zeros=lstAll$remas[[best]]$zeros,doMCMC=TRUE);
+    wtsUtilities::saveObj(bestREMA,file.path(child_path$peek(),"rda_Zeros_REMA_Models.Best.RData"));
+  } else {
+    bestREMA = wtsUtilities::getObj(file.path(child_path$peek(),"rda_Zeros_REMA_Models.Best.RData"));
+  }
+```
+
+```{r}
+#| label: fig_Zeros_MCMCDiags
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  p = wtsMCMC::mcmcTMB_PlotParamDiagnostics(bestREMA$dfrPDs,
+                                            paste0("biomass_pred[",bestREMA$tdy_mxIdx,"]"),
+                                            label="terminal MMB");
+  lbl = wtsQMD::getLabel();
+  cap = paste0('MCMC diagnostics for the "',best,'" model.')
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
 
 ```{r}
-logit_tw_p = unname(lstAll$remas[["Tweedie w/ p=0.5"]]$rema_mdl$sdrep$par.fixed[2]);
-tw_p_LB = 1;#--lower arithmetic-scale bound
-tw_p_UB = 2;#--upper arithmetic-scale bound
-tw_p = tw_p_LB + (tw_p_UB-tw_p_LB)*1/(1+exp(-logit_tw_p));
-dfrRTs = tibble::tribble(~option,~time,
-                          opt1,lstAll$remas[[opt1]]$rema_mdl$runtime,
-                          opt2,lstAll$remas[[opt2]]$rema_mdl$runtime,
-                          opt3,lstAll$remas[[opt3]]$rema_mdl$runtime,
-                          opt4,lstAll$remas[[opt4]]$rema_mdl$runtime,
-                          opt5,lstAll$remas[[opt5]]$rema_mdl$runtime);
+#| label: fig_Zeros_OSAs
+#| results: asis
+#| fig-width: 6.5 
+#| fig-asp: 1.0
+  plotOSAs<-function(osas){
+      old_thm = ggplot2::theme_set(cowplot::theme_cowplot(font_size = 10) +
+                                   cowplot::background_grid() +
+                                   cowplot::panel_border());
+      thm1 = ggplot2::theme(legend.position="inside",
+                            legend.position.inside=c(0.01,0.99),
+                            legend.justification.inside=c(0.01,0.99));
+      thm = wtsPlots::getStdTheme();
+      p1 = osas$plots$biomass_resids + thm;
+      p2 = osas$plots$biomass_fitted + thm;
+      p3 = osas$plots$biomass_qq     + thm + thm1;
+      pg1 = cowplot::plot_grid(p1,p2,nrow=1);
+      pg  = cowplot::plot_grid(pg1,p3,ncol=1);
+      ggplot2::theme_set(old_thm);
+      return(pg);
+  }
+  p = plotOSAs(bestREMA$osas);
+  # plotOSAs(lstAll$remas[[opt1]]$osas);
+  # plotOSAs(lstAll$remas[[opt2]]$osas);
+  # plotOSAs(lstAll$remas[[opt3]]$osas);
+  # plotOSAs(lstAll$remas[[opt4]]$osas);
+  # plotOSAs(lstAll$remas[[opt5]]$osas);
+  lbl = wtsQMD::getLabel();
+  cap = paste0('OSA (one-step ahead) diagnostics for the "',best,'" model.')
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
 ```
-
-The model assuming a Tweedie error distribution and using the $p = 0.5$ criteria may not have converged (the max gradient was `r formatC(lstAll$remas[["Tweedie w/ p=0.5"]]$rema_mdl$final_gradient[2])` while the variance parameter was estimated essentially at its arithmetic upper bound (estimate = `r formatC(tw_p,digits=6)`, upper bound = 2). In addition, it took `r as.numeric(dfrRTs$time[5])` seconds for this model to converge as compared with < 1s for the other models.
 
 #  Summary and Recommendations
 
 This report presented a novel approach to "fill in" zeros in a survey abundance or biomass time series to facilitate time series modeling, in particular with the `rema` R package [@rema], based on substituting abundance/biomass values and CVs determined from a user-selected probability of non-detection in place of the zeros. The utility of this approach was explored using annual survey time series for Pribilof Islands blue king crab mature male abundance and biomass; zeros occurred in these time series in 2023 and 2024. `rema` provides three options for dealing with zeros, two for lognormal error distributions (treat 0's as NAs/ignore as missing; substitute a small value for zeros, and a large value for its CV) and one for a Tweedie error distribution (specify a large CV). In the first case, the predicted value for any zero-value observation is the same as the previous predicted value, while its uncertainty increases--the prediction treats the zero-value observation as if it did not occur. In the second case, a small value is provided, together with a large CV, but the values chosen are rather arbitrary and the resulting predictions are generally very sensitive to the values chosen. Using the Tweedie error distribution, the third case, is intuitively attractive because it allows for zero-value observations whereas the lognormal does not. However, it does require that the user specify a non-zero CV for any zeros and models using the Tweedie distribution have been found to take a very long time to converge, in some cases.
 
-The approach taken here is to recognize that, for populations at low densities relative to the sampling effort, zero-value catches may be the rule rather than the exception--and to use sampling theory to guide the choice of substitute values for the observed non-detection and associated CV. In the simplest case, the sampling of individuals randomly-distributed across a seascape follows a Poisson distribution, which yields a particularly simple form for the probability of obtaining a series of zero-value catches as a function of the density of those individuals. We inverted this relationship to determine the density that would yield a given probability of non-detection over a given number of survey hauls. For the Poisson distribution, this also allowed us to determine an appropriate CV
+The approach taken here is to recognize that, for populations at low densities relative to the sampling effort, zero-value catches may be the rule rather than the exception--and to use sampling theory to guide the choice of substitute values for the observed non-detection and associated CV. In the simplest case, the sampling of individuals randomly-distributed across a seascape follows a Poisson distribution, which yields a particularly simple form for the probability of obtaining a series of zero-value catches as a function of the density of those individuals ([@eq-PoissDist]). I inverted this relationship to determine the density ([@eq-Density]) that would yield a given probability of non-detection for a given number of survey hauls. For the Poisson distribution, this also allowed me to determine a corresponding CV. For the PIBKC time series, this approach yielded similar estimates for the smoothed time series under both lognormal and Tweedie error distributions, but the Tweedie model took ~50 times longer to run and had either not yet converged or converged to the upper bound for the variance scale parameter. Interestingly, the Tweedie model with the standard `rema` option (fitting the 0's with user-selected large CVs) converged successfully but the estimates for 2023 and 2024 were simply extensions of the 2022 estimates (albeit with increasing uncertainty)--similar to the results for the lognormal model that treated zeros as missing (NA's). The lognormal model that substituted a user-defined small value (and large CV) for the 0's yielded the least satisfactory results, as the estimates were rather overstrongly pulled to zero.
+
+Given the results presented here and the relative simplicity and interpretability of the distribution-based approach, I would recommend it as the preferred substitution method for time series 0's when fitting `rema` models over the "0's as NAs" and "small constant" methods currently implemented as options for the lognormal error distribution in `rema`. Further I would not recommend using the Tweedie error distribution given its apparent convergence issues. 
+
+As a final note, sampling distributions other than the Poisson distribution discussed here could also be considered to determine reasonable non-detectable densities and associated CVs from which to derive suitable substitutes for survey index-based zero abundance or biomass estimates.
 
 ```{r}
 #| label: refs_Zeros

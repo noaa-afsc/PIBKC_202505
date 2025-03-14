@@ -12,3 +12,7 @@ r_ListForFiguresInfo.csv
 r_ListForTables.RData
 r_ListForTablesInfo.csv
 q00_Zeros.html
+*.pdf
+rda_ListForFigures.RData
+rda_ListForTablesInfo.RData
+rda_Zeros_REMA_Models.Best.RData
