@@ -59,7 +59,7 @@ format:
 echo: false
 warning: false
 results: 'hide'
-keep-md: true
+keep-md: false
 keep-yaml: false
 editor: source
 editor_options: 
