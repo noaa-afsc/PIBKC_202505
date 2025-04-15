@@ -1,0 +1,16 @@
+figures
+tables
+.DStore
+*.html
+*.html.md
+*.pdf.md
+*.tex
+*.aux
+*.log
+*_ListForFigures.*
+*_ListForTables.*
+*_ListForFiguresInfo.*
+*_ListForTablesInfo.*
+*_files
+*.zip
+VAST model for eastern GOA pollock.docx

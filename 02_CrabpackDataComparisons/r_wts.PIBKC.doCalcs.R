@@ -2,14 +2,14 @@
 #--NOTE: output units for biomass are 1000's t, for abundance are millions
 
 dirThs = dirname(rstudioapi::getActiveDocumentContext()$path)
-setup = wtsUtilities::getObj(file.path(dirThs,"rda_AssessmentSetup.PIBKC.RData"));
+setup = wtsUtilities::getObj(file.path(dirThs,"../rda_AssessmentSetup.RData"));
 
 #--set options
 species    = 'BKC';
 strataType = '2015';
 minYr = 1975;
-maxYr = setup$asmtYr;
-downloadDate = "August 15, 2023";#--TODO: move to assessment setup(?)
+maxYr = 2024;
+downloadDate = "August 14, 2024";
 dirData = "~/Work/StockAssessments-Crab/Data/Survey.NMFS.EBS/Current";
 fn.SD   = "PIBKC_SurveyStrata.csv"
 fn.CH   = "PIBKC_HaulData.csv"
@@ -27,7 +27,7 @@ minSize   = 0;#minimum size of individuals to extract
 cutpts    = seq(from=minSize,to=200,by=5);
 
 verbosity = 0;##0=off,1=minimal,2=full
-  
+
 #--define size groups for males
 #----immature/mature groups for females are based on abdomen morphology and egg condition
 dfrZGT<-rbind(
@@ -219,7 +219,7 @@ lvls<-c("1. immature females","2. immature males",
         "7. all females","8. all males");
 lbls<-c("immature females","immature males",
         "mature females","mature males",
-        "sublegal males","legal males", 
+        "sublegal males","legal males",
         "all females","all males");
 tmp$SEX<-factor(tmp$SEX,levels=lvls,labels=lbls);
 
@@ -227,7 +227,7 @@ dfrACD.ByX.PD<-tmp;
 rm(tmp,dfrACD.ByX.ByStrata);
 
 #--get stats on biomass/abundance
-tmp = dfrACD.ByX.PD |> 
+tmp = dfrACD.ByX.PD |>
         dplyr::select(SEXp,SEX,YEAR,totABUNDANCE,totBIOMASS) |>
         dplyr::mutate(decade=10*floor(YEAR/10));
 dfrStats = tmp |> dplyr::group_by(SEXp,SEX,decade) |>
@@ -235,7 +235,7 @@ dfrStats = tmp |> dplyr::group_by(SEXp,SEX,decade) |>
                                     maxAbd=max(totABUNDANCE),
                                     meanBio=mean(totBIOMASS),
                                     maxBio=max(totBIOMASS)) |>
-                  dplyr::ungroup() |> 
+                  dplyr::ungroup() |>
                   dplyr::arrange(SEXp,SEX,decade);
 
 #--Size compositions
@@ -302,7 +302,7 @@ evs.stns<-wtsGIS::mergeDataframeWithLayer(evs.csv,surveyGridLayers$stations,
                                           sfJoinType="left join",
                                           spAllData=FALSE,spDuplicateGeoms=TRUE);
 
-rm(dfr.crabhauls,dfr.HD,dfr.ID,dfr.SD,
+rm(dfr.crabhauls,dfr.SDp,
    dfrID.ImmF,dfrID.MatF,dfrID.AllF,dfrID.ImmM,dfrID.MatM,dfrID.SubL,dfrID.LglM,dfrID.AllM,
    idx,lbls,lvls,Sum,verbosity);
 

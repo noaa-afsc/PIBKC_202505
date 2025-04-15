@@ -1,0 +1,192 @@
+---
+title: "2025 PIBKC Assessment Considerations"
+author:
+- name: William T. Stockhausen
+  affiliations:
+    - id: afsc-refm
+      name: "Alaska Fisheries Science Center"
+      department: "Resource Ecology and Fisheries Management"
+      address: 
+        - "7600 Sand Point Way N.E."
+        - "Seattle, Washington 98115-6349"
+date: '`r format(Sys.time(), "%b %e, %Y")`'
+fontsize: 11pt 
+number-sections: true
+number-depth: 3
+reference-location: document
+reference-section-title: References
+bibliography: '`r path.expand("~/Work/Projects/Bibliography/AllRefs.bib")`'
+csl: '`r system.file("files/CJFAS.csl",package="wtsQMD")`'
+link-citations: true
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format: 
+  html: 
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 8
+    fig-asp: 0.4
+    fig-dpi: 100
+    embed-resources: true
+    include-in-header: 
+      - '`r system.file("files/in-line_math_mode.html",package="wtsQMD")`'
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    fig-width: 6.5
+    fig-asp: 0.4
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+          \usepackage{fontspec}
+          \usepackage{multicol}
+          \usepackage{hhline}
+          \newlength\Oldarrayrulewidth
+          \newlength\Oldtabcolsep
+      - file: '`r system.file("files/ltx_ExtraLatexIncludes.tex",package="wtsQMD")`'
+echo: false
+message: false
+warning: false
+results: 'hide'
+keep-md: true
+keep-yaml: false
+editor: source
+editor_options: 
+  chunk_output_type: console
+concordance: true
+params:
+  setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
+  rdaAsmtSetup: "rda_AssessmentSetup.RData"
+  testing: false
+  reorderTables: false   #--issue with finding "range" of table values  (don't use)
+  reorderFigures: false  #--issue with finding "range" of figure values (don't use)
+---
+<!-- IMPORTANT: if used as a child doc, all chunk labels must be unique within the overall document -->
+
+<!-- 
+  NOTEs: 
+     * child_path$peek() gives path to current script folder.
+     * before starting a child document, do 
+         "child_path$push(file.path(child_path$peek(),rel_path))" first, 
+         where rel_path is the relative path to the child
+     * after a child document has finished, do "child_path$pop()" to return to current path value
+-->
+
+<!-- if not child doc, set up required objects -->
+```{r}
+#| label: REPT_setup
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: "asis"
+  testing = params$testing;
+  if (testing) cat(params$setup,"\n\n")
+  source(params$setup);
+  if (testing) cat("root = ",root,"\n\n")
+  reorderTables  = params$reorderTables;
+  reorderFigures = params$reorderFigures;
+```
+
+```{r}
+#| label: setup_REPT
+#| results: 'asis'
+  require(ggplot2);
+  require(kableExtra);
+  require(tables);
+  Sum = wtsUtilities::Sum;
+  old_thm = ggplot2::theme_set(cowplot::theme_cowplot(font_size = 10) +
+                               cowplot::background_grid() +
+                               cowplot::panel_border());
+  thm = wtsPlots::getStdTheme();
+  options("readr.show_col_types"=FALSE);
+  if (testing) cat("dirThs =",child_path$peek(),"\n\n")
+  ##--NOTE: take out or modify the following as necessary
+  if (!exists("s")){
+    if (rstudioapi::isAvailable())
+      fn = file.path(rstudioapi::getActiveProject(),"rda_ProjectSetup.RData");
+    if (child_path$peek()!="")
+      fn = file.path(child_path$peek(),"../rda_ProjectSetup.RData");
+    #--for debugging: ;
+    if (file.exists(fn)) s = wtsUtilities::getObj(fn);
+  }
+  ##--
+```
+
+\begin{center}
+THIS INFORMATION IS DISTRIBUTED SOLELY FOR THE PURPOSE OF 
+PREDISSEMINATION PEER REVIEW UNDER APPLICABLE INFORMATION QUALITY GUIDELINES. 
+IT HAS NOT BEEN FORMALLY DISSEMINATED BY NOAA FISHERIES/ALASKA FISHERIES SCIENCE CENTER AND 
+SHOULD NOT BE CONSTRUED TO REPRESENT ANY AGENCY DETERMINATION OR POLICY
+\end{center}
+
+
+# Introduction 
+
+The next full assessment for the Pribilof Islands blue king crab (PIBKC) stock will be reviewed by the Crab Plan Team (CPT) in September 2025 and the NPFMC's Science and Statistical Committee (SSC) in October 2025. The stock has been on a two-year cycle for assessment and the last full assessment was conducted in September 2023 [@PIBKC2023]. Following the September 2025 assessment, the stock will begin a four-year assessment cycle and the next full assessment will be conducted in 2029. 
+
+This report primarily addresses a number of issues related to data from the NMFS EBS bottom trawl survey for PIBKC that have arisen since the last assessment. First, AFSC's Shellfish Assessment Program (SAP) has developed an R package, "crabpack", as a replacement to AKFIN Answers (https://akfin.psmfc.org) for obtaining crab-related survey data in a standard format. SAP requested that assessment authors test the package and compare results of data pulls using the package with data pulled using the authors' previous methods. Second, as part of the effort to "modernize" the NMFS EBS bottom trawl survey to improve efficiency, the high-density "corner" stations in the NMFS EBS survey grid near the Pribilof Islands and St. Matthew Island were dropped for the 2024 survey and will not be sampled in future surveys. Assessment authors were asked to consider the impact of this change on their assessment. Finally, the 2023 and 2024 surveys found no mature male blue king crab in the Pribilof Islands sampling strata. While this is principally a consequence of applying relatively low sampling effort to a stock at low (but non-zero) abundance, the "hard zeros" introduced in the time series of mature male biomass for PIBKC can be problematic for the subsequent assessment. Several approaches to dealing with this issue are considered here. 
+
+This report is organized into the following sections: Responses to previus CPT and SSC Comments (@sec-Resps), "New" Data and Analyses (@sec-NDAs), Summary (@sec-Smry), and Acknowledgments (@sec-Acks).
+
+<!-- # Responses to CPT and SSC Comments {#sec-Resps} -->
+```{r sct_Resps, child=file.path(child_path$peek(),"q01_PIBKC_ResponsesToComments2025.qmd")}
+```
+
+<!-- # "New" Data and Analyses {#sec-NDAs} -->
+```{r sct_NDAs, child=file.path(child_path$peek(),"q02_NewDataAndAnalyses.qmd")}
+```
+
+# Summary {#sec-Smry}
+
+The author recommends  
+
+The author recommends using the full-precision carapace length measurements with the current length-weight regressions to calculate biomass from NMFS EBS survey abundance and size data.
+
+The author looks forward to discussions with the CPT and SSC regarding model choices for the September assessment and further refinements to address on a longer timescale.
+
+# Acknowledgments {#sec-Acks}
+
+The author would like to acknowledge and thank .
+
+
+<!-- references -->
+```{r,eval=!knitr::opts_knit$get("child"),results='asis'}
+  cat("# References {-}\n");
+  cat("::: {#refs}\n");
+  cat(":::\n\n");
+```
+
+<!-- tables, if not child doc and lstTbls is not empty -->
+```{r}
+#| label: tables_REPT
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printTablesSectionFromList.R",package="wtsQMD"));
+```
+
+<!-- figures, if not child doc and lstFigs is not empty -->
+```{r}
+#| label: figures_REPT
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));
+```

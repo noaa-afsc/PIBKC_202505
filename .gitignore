@@ -3,3 +3,9 @@
 .RData
 .Ruserdata
 .DS_Store
+*_ListForFigures.*
+*_ListForTables.*
+*_ListForFiguresInfo.*
+*_ListForTablesInfo.*
+*_files
+*.zip

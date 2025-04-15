@@ -1,0 +1,195 @@
+---
+title: "2025 PIBKC Assessment Considerations"
+author:
+- name: William T. Stockhausen
+  affiliations:
+    - id: afsc-refm
+      name: "Alaska Fisheries Science Center"
+      department: "Resource Ecology and Fisheries Management"
+      address: 
+        - "7600 Sand Point Way N.E."
+        - "Seattle, Washington 98115-6349"
+date: '`r format(Sys.time(), "%b %e, %Y")`'
+fontsize: 11pt 
+number-sections: true
+number-depth: 3
+reference-location: document
+reference-section-title: References
+bibliography: '`r path.expand("~/Work/Projects/Bibliography/AllRefs.bib")`'
+csl: '`r system.file("files/CJFAS.csl",package="wtsQMD")`'
+link-citations: true
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format: 
+  html: 
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 8
+    fig-asp: 0.4
+    fig-dpi: 100
+    embed-resources: true
+    include-in-header: 
+      - '`r system.file("files/in-line_math_mode.html",package="wtsQMD")`'
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    fig-width: 6.5
+    fig-asp: 0.4
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+          \usepackage{fontspec}
+          \usepackage{multicol}
+          \usepackage{hhline}
+          \newlength\Oldarrayrulewidth
+          \newlength\Oldtabcolsep
+      - file: '`r system.file("files/ltx_ExtraLatexIncludes.tex",package="wtsQMD")`'
+echo: false
+message: false
+warning: false
+results: 'hide'
+keep-md: true
+keep-yaml: false
+editor: source
+editor_options: 
+  chunk_output_type: console
+concordance: true
+params:
+  setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
+  rdaAsmtSetup: "rda_AssessmentSetup.RData"
+  testing: false
+  reorderTables: false   #--issue with finding "range" of table values  (don't use)
+  reorderFigures: false  #--issue with finding "range" of figure values (don't use)
+---
+<!-- IMPORTANT: if used as a child doc, all chunk labels must be unique within the overall document -->
+
+<!-- 
+  NOTEs: 
+     * child_path$peek() gives path to current script folder.
+     * before starting a child document, do 
+         "child_path$push(file.path(child_path$peek(),rel_path))" first, 
+         where rel_path is the relative path to the child
+     * after a child document has finished, do "child_path$pop()" to return to current path value
+-->
+
+<!-- if not child doc, set up required objects -->
+```{r}
+#| label: SECT02_setup
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: "asis"
+  testing = params$testing;
+  if (testing) cat(params$setup,"\n\n")
+  source(params$setup);
+  if (testing) cat("root = ",root,"\n\n")
+  reorderTables  = params$reorderTables;
+  reorderFigures = params$reorderFigures;
+```
+
+```{r}
+#| label: setup_SECT02
+#| results: 'asis'
+  require(ggplot2);
+  require(kableExtra);
+  require(tables);
+  Sum = wtsUtilities::Sum;
+  old_thm = ggplot2::theme_set(cowplot::theme_cowplot(font_size = 10) +
+                               cowplot::background_grid() +
+                               cowplot::panel_border());
+  thm = wtsPlots::getStdTheme();
+  options("readr.show_col_types"=FALSE);
+  if (testing) cat("dirThs =",child_path$peek(),"\n\n")
+  ##--NOTE: take out or modify the following as necessary
+  if (!exists("s")){
+    if (rstudioapi::isAvailable())
+      fn = file.path(rstudioapi::getActiveProject(),"rda_ProjectSetup.RData");
+    if (child_path$peek()!="")
+      fn = file.path(child_path$peek(),"../rda_ProjectSetup.RData");
+    #--for debugging: ;
+    if (file.exists(fn)) s = wtsUtilities::getObj(fn);
+  }
+  ##--
+```
+
+# "New" Data and Analyses {#sec-NDAs}
+
+
+<!-- # Crabpack data comparison {#sec-CrabPack} -->
+
+<!-- ```{r} -->
+<!-- fldr = "../02_CrabpackDataComparisons"; -->
+<!-- child_path$push(file.path(child_path$peek(),fldr)); -->
+<!-- ``` -->
+<!-- ```{r sct_CrabPack, child=file.path(child_path$peek(),"q00_PIBKC_CrabpackDataComparisons.qmd")} -->
+<!-- ``` -->
+<!-- ```{r} -->
+<!-- child_path$pop(); -->
+<!-- ``` -->
+
+
+<!-- # No corner stations {#sec-NoCorners} -->
+
+<!-- ```{r sct_NoCorners, child=file.path(child_path$peek(),"../03_NoCornerStations/q00_PIBKC _NoCornerStations.qmd")} -->
+<!-- ``` -->
+
+
+<!-- # Sampling-based zeros substitution {#sec-SubstZeros} -->
+
+```{r}
+fldr = "../04_SamplingBasedZerosSubstitutions";
+child_path$push(file.path(child_path$peek(),fldr));
+```
+```{r sct_SubstZeros, child=file.path(child_path$peek(),"q00_SamplingBasedZerosSubstitutions.qmd")}
+```
+```{r}
+child_path$pop();
+```
+
+
+<!-- # sdmTMB for zeros substitution {#sec-SubstZeros} -->
+
+<!-- ```{r sct_sdmTMB, child=file.path(child_path$peek(),"../05_sdmTMB/q00_sdmTMBforZeroSubstitutions.qmd")} -->
+<!-- ``` -->
+
+<!-- references -->
+```{r,eval=!knitr::opts_knit$get("child")&!isPDF,results='asis'}
+  cat("# References {-}\n");
+  cat("::: {#refs}\n");
+  cat(":::\n\n");
+```
+
+<!-- tables, if not child doc and lstTbls is not empty -->
+```{r}
+#| label: tables_SECT02
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printTablesSectionFromList.R",package="wtsQMD"));
+```
+
+<!-- figures, if not child doc and lstFigs is not empty -->
+```{r}
+#| label: figures_SECT02
+#| eval: !expr '!knitr::opts_knit$get("child")'
+#| results: asis
+  source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));
+```

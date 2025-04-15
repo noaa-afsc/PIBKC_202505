@@ -1,0 +1,142 @@
+---
+title: "Responses to SSC and CPT Comments"
+institute: NOAA/NMFS/AFSC
+date: '`r format(Sys.time(), "%b %e, %Y")`'
+fontsize: 11pt 
+number-sections: true
+reference-location: document
+reference-section-title: References
+#bibliography: bib_PIBKC.bib
+crossref:
+  chapters: false      # prepend label reference numbers by chater number?
+  fig-title: Figure    # for caption: default is "Figure")
+  tbl-title: Table     # for caption: default is "Table")
+  title-delim: "."     # for caption: default is ":")
+  fig-prefix: Figure   # for in-text (use [-@fig-ref] to drop prefix in text)
+  tbl-prefix: Table    # for in-text (use [-@tbl-ref] to drop prefix in text)
+  fig-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  tbl-labels: arabic    # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  subref-labels: alpha a # options are arabic, roman, roman i, alpha x, alpha X; latter two starting from x/X
+  ref-hyperlink: true    # references are hyperlinked if true
+format: 
+  html: 
+    df-print: paged
+    toc: true
+    toc-location: right
+    fig-width: 8
+    fig-asp: 1.4
+    fig-dpi: 100
+  pdf:
+    documentclass: scrartcl
+    toc: false
+    fig_crop: false
+    keep-tex: false
+    geometry:
+      - left=1.0in
+      - right=1.0in
+      - top=1.0in
+      - bottom=1.0in
+      - textwidth=6.5in
+      - showframe=false
+    include-in-header: 
+      - text: |
+          \usepackage{placeins}
+          \extrafloats{500}
+          \maxdeadcycles=10000
+#      - file: '`r system.file("files/ltx_ExtraLatexIncludesNew.tex",package="wtsQMD")`'
+echo: false
+warning: false
+results: 'hide'
+keep-md: false
+keep-yaml: false
+editor: source
+editor_options: 
+  chunk_output_type: console
+concordance: true
+params:
+  asmtYr: 2023
+  setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
+  testing: false
+---
+
+# Responses to SSC and CPT Comments {#sec-Responses}
+
+## Remarks pertinent to this assessment
+
+### CPT comments May 2023:
+#### CPT comment
+The CPT agreed (following the author's recommendation) with the change to use the **rema** R package for the assessment.
+
+#### Author response {#sec-ARCPT-rema}
+The *rema* R package, which underwent a favorable Center for Independent Experts (CIE) review during 2023, has been used to fit the random walk model to design-based estimates of MMB at the time of the survey.
+
+### SSC comments June 2023:
+##### SSC Comment
+The SSC concurs with the author and CPT recommended application of the **rema** R package for this Tier 4 assessment.
+
+#### Author response
+See [@sec-ARCPT-rema].
+
+#### SSC Comment
+The SSC also looks forward to the SAFE section on rebuilding in September as the rebuilding plan nears its second decade.
+
+#### Author response
+The revised (2014) rebuilding plan does not have a target rebuild date and NMFS cannot predict when or if rebuilding will occur [@FMP_Amendments]. There is no new and unexpected information that would significantly alter the rebuilding expectations. The recent trajectory of the time series of MMB-at-survey time provides no evidence of an increasing trend. Further, survey size compositions provide no evidence for recent recruitment to the stock. The failure of the EBS shelf survey to catch any mature males this year does not raise the level of concern for this stock above what it has been in the recent past; the survey does not target blue king crab and the result is consistent with sampling a population at low (but non-zero) abundance. The causes of the continued low abundance and failure to recover are not well understood, but are thought to be predominantly due to environmental changes that inhibit recruitment. In April 2022, the last time a determination of overfished status was made was made, the Regional Administrator determined that PIBKC was "not making inadequate progress" towards rebuilding. 
+
+### CPT comments September 2022:
+*None *
+
+### SSC comments October 2022:
+*None*
+
+### CPT comments May 2022:
+*None *
+
+### SSC comments June 2022:
+*None*
+
+### CPT comments September 2021:
+*None *
+
+### SSC comments October 2021:
+*None*
+
+### CPT comments May 2021:
+#### CPT Comment
+The CPT discussed the SAFE stock specification table with respect to PIBKC being a biennial assessment and whether the assessment should be brought back to a September CPT meeting cycle in order to fully account for any bycatch that occurs through the end of June. The advantages of an assessment review in September are that the most recent survey and bycatch data through the end of the June fishing year would be available, and there would be no need to revise the assessment with the final catches. The disadvantage is that it would add incrementally to the September workload, both for the assessment author and CPT. It was noted that the September workload has been reduced during odd years by shifting the SMBKC assessment to a biennial cycle. Therefore the CPT recommends that future PIBKC assessments (starting in 2023) should be conducted for September meetings.
+
+#### Author response
+As recommended, this assessment was moved to September 2023.
+
+#### CPT Comment
+The CPT recommends exploring VAST for the PIBKC assessment.
+
+#### Author response
+As the CPT itself noted, "using VAST may be problematic when very small numbers of animals are caught at only a handful of stations (as with PIBKC)" and "biomass estimates from VAST may not be reliable, and estimated confidence intervals may be even less so". Consequently, this request was given a low priority (potential VAST applications in the Tanner crab assessment were addressed instead) and has not yet been addressed.
+
+#### CPT Comment
+The CPT recommends "...exploring smoothing the survey point-estimate CVs (e.g., apply median CV for all years)".
+
+#### Author response
+The random walk model implemented using the *rema* R package incorporates the annual variability in survey point estimates in a statistically-appropriate manner. Consequently, this recommendation has not been addressed.
+
+### SSC comments June 2021:
+#### SSC comment (general) 
+Crab assessments should generally follow the default groundfish practice of projecting the current year’s catches if one or more fisheries are incomplete at the time of the assessment.
+
+#### Author response
+Now that the PIBKC assessment is again conducted for September/October, this is no longer an issue for this assessment.
+
+#### SSC Comment
+The SSC supports the CPT recommendation to move the timing of the PIBKC assessment back to September for the CPT.
+
+#### Author response
+As recommended, this assessment was conducted for the September 2023 meeting.
+
+#### SSC comment
+The SSC looks forward to the report on the blue king crab stock structure template in the near future.
+
+#### Author response
+Staff capacity has not permitted progress on this request.
+
+
