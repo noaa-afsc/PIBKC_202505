@@ -136,21 +136,28 @@ params:
 
 <!-- # Crabpack data comparison {#sec-CrabPack} -->
 
-<!-- ```{r} -->
-<!-- fldr = "../02_CrabpackDataComparisons"; -->
-<!-- child_path$push(file.path(child_path$peek(),fldr)); -->
-<!-- ``` -->
-<!-- ```{r sct_CrabPack, child=file.path(child_path$peek(),"q00_PIBKC_CrabpackDataComparisons.qmd")} -->
-<!-- ``` -->
-<!-- ```{r} -->
-<!-- child_path$pop(); -->
-<!-- ``` -->
+```{r}
+fldr = "../02_CrabpackDataComparisons";
+child_path$push(file.path(child_path$peek(),fldr));
+```
+```{r sct_CrabPack, child=file.path(child_path$peek(),"q00_PIBKC_CrabpackDataComparisons.qmd")}
+```
+```{r}
+child_path$pop();
+```
 
 
 <!-- # No corner stations {#sec-NoCorners} -->
 
-<!-- ```{r sct_NoCorners, child=file.path(child_path$peek(),"../03_NoCornerStations/q00_PIBKC _NoCornerStations.qmd")} -->
-<!-- ``` -->
+```{r}
+fldr = "../03_NoCornerStations";
+child_path$push(file.path(child_path$peek(),fldr));
+```
+```{r sct_NoCorners, child=file.path(child_path$peek(),"q00_NoCornerStations.qmd")}
+```
+```{r}
+child_path$pop();
+```
 
 
 <!-- # Sampling-based zeros substitution {#sec-SubstZeros} -->
@@ -168,8 +175,15 @@ child_path$pop();
 
 <!-- # sdmTMB for zeros substitution {#sec-SubstZeros} -->
 
-<!-- ```{r sct_sdmTMB, child=file.path(child_path$peek(),"../05_sdmTMB/q00_sdmTMBforZeroSubstitutions.qmd")} -->
-<!-- ``` -->
+```{r}
+fldr = "../05_sdmTMB";
+child_path$push(file.path(child_path$peek(),fldr));
+```
+```{r sct_sdmTMB, child=file.path(child_path$peek(),"q00_sdmTMBforZeroSubstitutions.qmd")}
+```
+```{r}
+child_path$pop();
+```
 
 <!-- references -->
 ```{r,eval=!knitr::opts_knit$get("child")&!isPDF,results='asis'}

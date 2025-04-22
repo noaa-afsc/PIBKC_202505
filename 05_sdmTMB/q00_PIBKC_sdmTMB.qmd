@@ -95,7 +95,7 @@ params:
   
   #--path to folder containing "this" file
   dirThs = child_path$peek();
-  if (rstudioapi::isAvailable()) dirThs = dirname(rstudioapi::getActiveDocumentContext()$path)
+  if (rstudioapi::isAvailable()) dirThs = dirname(rstudioapi::getActiveDocumentContext()$path);
 
   #--constants
   MILLION  = 1000000;
@@ -150,7 +150,7 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
                                        lbl=paste0("tbl-sdmTMB-Models"),
                                        cap=cap,
                                        ori="P"));
-  rm(lst,mdl,dfrAICs,kbl,cap);
+  rm(kbl,cap);
 ```
 
 ```{r}
@@ -179,7 +179,15 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
 ```
 
 ```{r sdmTMB_GetModelResults}
-  lstMdls = wtsUtilities::getObj(file.path(dirThs,"rda_mdls-all_log_depth-st_rw-dg.RData"));
+  fn = file.path(dirThs,"rda_mdls-all_log_depth-st_rw-dg.RData");
+  if (file.exists(fn)) {
+    lstMdls = wtsUtilities::getObj(fn);
+  } else {
+    lst1 = wtsUtilities::getObj(file.path(dirThs,"rda_mdls_log_depth-st_rw-dg.RData"));
+    lst2 = wtsUtilities::getObj(file.path(dirThs,"rda_mdls_ar_log_depth-st_rw-dg.RData"));
+    lstMdls = c(lst1,lst2);
+    rm(lst1,lst2);
+  }
   names(lstMdls) = stringr::str_replace(stringr::str_remove(names(lstMdls),"mdl_"),"_","-");
   lstMdls = lstMdls[sort(names(lstMdls))];
 ```
@@ -340,18 +348,6 @@ rm(p1,p2,p3,pg,lbl,cap,pth);
 rm(lstRes,mdl,lbl,cap,pth);
 ```
 
-<!-- ```{r} -->
-<!-- #| label: fig_sdmTMB-Mesh -->
-<!-- #| results: asis -->
-<!-- #| fig-width: 6.5  -->
-<!-- #| fig-asp: 1.0 -->
-
-
-<!--   lbl = wtsQMD::getLabel(); -->
-<!--   cap = paste0(""); -->
-<!--   pth = wtsQMD::getFigFN(); -->
-<!--   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P")); -->
-<!-- ``` -->
 
 <!-- references, if not child doc -->
 ```{r,eval=!knitr::opts_knit$get("child"),results='asis'}

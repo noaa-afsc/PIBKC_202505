@@ -119,7 +119,7 @@ params:
                 file.path(rstudioapi::getActiveProject(),
                           params$rdaAsmtSetup));
     #--for debugging: fn = file.path(rstudioapi::getActiveProject(),"rda_AssessmentSetup.RData");
-    cat(fn)
+    if (testing) cat(fn)
     setup = wtsUtilities::getObj(fn);
   }
 
