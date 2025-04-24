@@ -88,7 +88,8 @@ params:
 ```{r}
 #| label: setup_PIBKC_sdmTMB
 #| results: 'asis'
-  require(crabpack);
+  require(sdmTMB);
+  require(mgcv);
   require(ggplot2);
   require(kableExtra);
   require(tables);
@@ -96,6 +97,7 @@ params:
   #--path to folder containing "this" file
   dirThs = child_path$peek();
   if (rstudioapi::isAvailable()) dirThs = dirname(rstudioapi::getActiveDocumentContext()$path);
+  source(file.path(dirThs,"r_sdmTMB_PrintFunctions.R"))
 
   #--constants
   MILLION  = 1000000;
@@ -105,11 +107,11 @@ params:
   yrs = 1975:2024;
 ```
 
-## Introduction
+## sdmTMB indices for PIBKC mature male biomass {#sec-sdmTMB}
 
 As noted in the previous section, the NMFS EBS bottom trawl survey captured no mature male PIBKC in 2023 and 2024, introducing problematic zeros into the survey MMB time series that the `rema` model is used to smooth. It was suggested that making assumptions regarding the sampling distribution for mature males was a simple way to develop "reasonable" replacement values for the zeros when using `rema` to obtain the smoothed time series. Although probably better than filling in the zeros with an arbitrary "small" number (as suggested in the `rema` documentation) or simply dropping the zeros from the time series, the suggested method does not avoid requiring possibly arbitrary assumptions regarding the underlying sampling distribution and/or appropriate detection level. One significant drawback to this approach is that it makes the implicit assumption that all sampling locations are statistically interchangeable and independent. In fact, PIBKC mature males have undergone a range contraction over time, as well as a decline in overall abundance/biomass (e.g., [@fig-sdmTMB-MapsMMB]), indicating that the sampling locations are not interchangeable or independent.
 
-Another, more satisfying, alternative for "filling in the zeros" would be to use a spatiotemporal model such as provided by the VAST [@VAST2015] or sdmTMB [@sdmTMB2024] R packages. Either package provides the ability to statistically model and estimate trends and variability in stock biomass through space and time given spatially-explicit data such as the NMFS EBS bottom trawl survey provides. Here, I investigated the use of sdmTMB, a more user-friendly alternative to VAST, to estimate a stock biomass time series for PIBKC mature males in the context of survey sampling results that captured no crab in multiple years.
+Another, more satisfying, alternative for "filling in the zeros" would be to use a spatiotemporal model such as provided by the `VAST` [@VAST2015] or `sdmTMB` [@sdmTMB2024] R packages. Either package provides the ability to statistically model and estimate trends and variability in stock biomass through space and time given spatially-explicit data such as the NMFS EBS bottom trawl survey provides. Here, I investigated the use of `sdmTMB`, a more user-friendly alternative to `VAST`, to estimate a stock biomass time series for PIBKC mature males in the context of survey sampling results that captured no crab in multiple years.
 
 ```{r}
 #| label: fig_sdmTMB-MapsMMB
@@ -126,11 +128,21 @@ Another, more satisfying, alternative for "filling in the zeros" would be to use
   rm(lbl,cap,pth);
 ```
 
-### sdmTMB 
+### Methods 
 
-sdmTMB is an R package that fits spatiotemporal Generalized Linear Mixed Effects Models (GLMMs) using Template Model Builder (TMB), R-INLA, and Gaussian Markov random fields. One common application is to create species distribution models (SDMs) from species abundance data collected across space and through time, although its principal advantage here is that it can also estimate stock-level time series by integrating estimated spatially-explicit patterns of abundance or biomass across space. A simple way to think about an sdmTMB model is that it provides a way to interpolate survey observations across space and time, taking into account both population variability across space and time as well as variability inherent to the sampling process itself.
+`sdmTMB` is an R package that fits spatiotemporal Generalized Linear Mixed Effects Models (GLMMs) using Template Model Builder (TMB), R-INLA, and Gaussian Markov random fields. One common application is to create species distribution models (SDMs) from species abundance data collected across space and through time, although its principal advantage here is that it can also estimate stock-level time series by integrating estimated spatially-explicit patterns of abundance or biomass across space. A simple way to think about an `sdmTMB` model is that it provides a way to interpolate survey observations across space and time, taking into account both population variability across space and time as well as variability inherent to the sampling process itself.
 
-Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit annual survey CPUE data (biomass/unit area) for PIBKC mature males using a spatial mesh defined by the sampling locations in UTM coordinates and a cutoff of 5 km ([-@fig-sdmTMB-Mesh]). Two of the four models, "m3" and "m3-ar" were two-stage "delta-gamma" models that used a binomial family with a log-link to model presence/absence of mature males in a survey haul (the delta model) and a gamma family with a log-link to model non-zero CPUE given that mature males were caught in the given survey haul (the gamma model). Both models included the survey haul depth as a possible covariate, with the possible effects on presence/absence or non-zero CPUE estimated as a smoothly-varying function of ln(depth). Spatiotemporal residuals were modeled as a random walk process in m3; in m3-ar, they were modeled as a first-order autoregressive process. Additionally, the spatial correlation was allowed to be anisotropic and Restricted Maximum Likelihood (REML) was used to fit both models. The remaining two models, "tw" and "tw-ar", were similar to their respective `m3` counterparts except that models used the Tweedie distribution [@Tweedie1984] with a log-link as the statistical basis for the fit rather than a delta-gamma model.
+Here, four `sdmTMB` models ([@tbl-sdmTMB-Models]) were fit to the spatially-explicit annual survey CPUE data (biomass/unit area) for PIBKC mature males (Figure [-@fig-sdmTMB-MapsMMB]) using a spatial mesh defined by the sampling locations in UTM coordinates and a cutoff of 5 km ([-@fig-sdmTMB-Mesh]). Two of the four models, "m3" and "m3-ar" were two-stage "delta-gamma" mixture models that used a binomial family with a log-link to model presence/absence of mature males in a survey haul (the delta model) and a gamma family with a log-link to model non-zero CPUE given that mature males were caught in the given survey haul (the gamma model). Both models included the survey haul depth as a possible covariate, with the possible effects on presence/absence or non-zero CPUE estimated as a smoothly-varying function of ln(depth). Spatiotemporal residuals were modeled as a random walk process in "m3"; in "m3-ar", they were modeled as a first-order autoregressive process. Additionally, the spatial correlation was allowed to be anisotropic and Restricted Maximum Likelihood (REML) was used to fit both models. The remaining two models, "tw" and "tw-ar", were similar to their respective "m3" counterparts except that models used the Tweedie distribution [@Tweedie1984] with a log-link as the statistical basis for the fit rather than a delta-gamma model. The Tweedie distribution is a compound Poisson-gamma distribution that incorporates a single linear predictor (rather than two in the case of a delta-gamma model) but estimates a parameter that reflects the degree of mixing between the underlying Poisson and gamma distributions. Thorson et al [-@ThorsonEtAl2021] recommend using the Tweedie distribution for spatiotemporal models by default, particularly when it is not possible to compare with scale from design-based estimators (although comparison is possible in this case)..
+
+### Results
+
+Standard model results are presented in Tables [-@tbl-sdmTMB-ModelResults-m3]-[-@tbl-sdmTMB-ModelResults-tw-ar]. AIC values for the four models are compared in Table [-@tbl-sdmTMB-AICs] and residual diagnostics using simulated residuals and the DHARAM R package [@DHARMa] are presented in Figures [-@fig-sdmTMB-Residuals-m3]-[-@fig-sdmTMB-Residuals-tw-ar]. The trends in mature male biomass estimated by the four models were all rather similar. They also generally agreed with the design-based estimates (Figures [-@fig-sdmTMBiIndices1] and [-@fig-sdmTMBiIndices2]), with the design-based values falling within the confidence intervals of the model-based indices except at the start of the time series when the design-based indices suggest extreme variability across the first five years. None of the four models exhibited poor residual characteristics Of the four models, while the "tw-ar" had the smallest (marginal) AIC and REML score, while both "ar" models had lower AIC and REML scores than their corresponding "non-ar" models. Although the use of AIC as a criteria for selection among models with random effects remains an area of active investigation for statisticians, its use here suggests that the "tw-ar" model should be preferred over the other models. 
+
+Compared with the `rema` models from the previous section ([-@sec-REMA]), the "tw-ar" model-derived index exhibits greater interannual temporal variability than the `rema` models, although this should not be unexpected given that the `rema` models are fitting to spatially-aggregated data using the design-based estimates whereas the sdmTMB model is capturing both the spatial and temporal variability in the haul-level data. Interestingly, the confidence intervals for the "tw-ar" index are much smaller than those of the `rema` models at the start of the time series but are larger at the end, reflecting the spatial contraction of the stock over time. At the end of the time series, where the design-based estimates are "hard" zeros, the "tw-ar" estimates are substantially lower (proportionally, but non-zero) than the `rema` estimates based on more *ad hoc* assumptions, although the `rema` estimates fall within the confidence bounds of the `sdmTM`B model's while the reverse is not true.
+
+### Recommendations
+
+The sdmTMB models provide a more statistically sound basis for "filling in the zeros" in the NMFS EBS bottom trawl survey data for mature male PIBKC biomass than do the `rema` models considered in the previous section ([-@sec-REMA]). One rationale for using a `rema`-based model is that it generally takes less time to run a model, although convergence issues leading to long run times have been known to occur. With the spatial mesh used here (Figure [-@fig-sdmTMB-Mesh]), run times were on the order of an hour or so, which does not seem prohibitive. Finer meshes would be expected to require longer processing times, but time constraints on the author precluded identifying an "optimal" mesh that balances processing time with stability of estimates for this report. In addition, only simple model selection and diagnostic criteria were included in this report. If the CPT recommends, and the SSC requests, that an `sdmTMB` model be used determine the mature male biomass time series used in the 2025 PIBKC stock assessment, recommendations for suitable diagnostics would be appreciated.
 
 ```{r tbl_sdmTMB-Models}
 #| results: "asis"
@@ -150,7 +162,7 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
                                        lbl=paste0("tbl-sdmTMB-Models"),
                                        cap=cap,
                                        ori="P"));
-  rm(kbl,cap);
+  rm(dfrDscr,kbl,cap);
 ```
 
 ```{r}
@@ -175,7 +187,7 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
                "The points indicate the NMFS EBS bottom trawl survey sampling locations usd to create the mesh.");
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(p,lbl=lbl,cap=cap,pth=pth,ori="P"));
-  rm(p,lbl,cap,pth);
+  rm(p,lbl,cap,pth,mesh3);
 ```
 
 ```{r sdmTMB_GetModelResults}
@@ -198,7 +210,7 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
   for (mdl in names(lstMdls)){
     #--mdl = names(lstMdls)[2];
     str = paste0("###--Results for model ",mdl,"----");
-    strp = capture.output(print(lstMdls[[mdl]]));
+    strp = capture.output(print_sdmTMB(lstMdls[[mdl]]));
     dfr = tibble::tibble(title=strp);
     names(dfr) = str;
     kbl = kableExtra::kbl(dfr,booktabs=TRUE,linesep="")  |> 
@@ -235,10 +247,28 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
 ```
 
 ```{r}
-#| label: fig_sdmTMB-Indices
+#| label: fig_sdmTMB-Residuals-
 #| results: asis
-#| fig-width: 6.5
+#| fig-width: 9
 #| fig-asp: 1.0
+
+  lstRes = wtsUtilities::getObj(file.path(dirThs,"rda_resids_log_depth-st_rw-dg.RData"));
+  names(lstRes) = stringr::str_replace(stringr::str_remove(names(lstRes),"mdl_"),"_","-");
+  lstRes = lstRes[sort(names(lstRes))];
+  for (mdl in names(lstMdls)){
+    lbl = wtsQMD::getLabel(xtra=mdl);
+    cap = paste0("DHAMRa residuals diagnostics plots for '",mdl,"'.");
+    pth = wtsQMD::getFigFN(xtra=mdl);
+    lstFigs = c(lstFigs,wtsQMD::printRGraphics(expression(plot(lstRes[[mdl]])),lbl=lbl,cap=cap,pth=pth,ori="L"));
+  }
+rm(lstRes,mdl,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig_sdmTMB-Indices1
+#| results: asis
+#| fig-width: 9.0
+#| fig-asp: 0.65
   #--get indices----
   dfrACD_MM  = wtsUtilities::getObj(file.path(dirThs,"rda_ACD_MM.RData"));  
   lstIdxs = wtsUtilities::getObj(file.path(dirThs,"rda_idxs_log_depth-st_rw-dg.RData"));
@@ -259,6 +289,19 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
         geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
         labs(y="biomass (1,000's t)") +
         wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap = paste0("Biomass time series for mature male PIBKC, as estimated by each of the four sdmTMB models. ",
+               "Blue dots indicate the estimates obtained using design-based calculations.");
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p1,lbl=lbl,cap=cap,pth=pth,ori="L"));
+  rm(p1,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig_sdmTMB-Indices2
+#| results: asis
+#| fig-width: 9
+#| fig-asp: 0.65
   p2 = ggplot(dfrIdxs,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
         geom_ribbon(colour=NA,alpha=0.5) + geom_line() +
         geom_vline(xintercept=2020) +
@@ -268,22 +311,23 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
         labs(y="biomass (1,000's t)") +
         wtsPlots::getStdTheme();
   
-  pg = cowplot::plot_grid(p1,p2,ncol=1);
   lbl = wtsQMD::getLabel();
-  cap = paste0("Biomass time series for mature male PIBKC, as estimated by each of the four sdmTMB models. ",
-               "Blue dots indicate the estimates obtained using design-based calculations.");
+  cap = paste0("Biomass time series on a log10-scale for mature male PIBKC, as estimated by each of the four sdmTMB models. ",
+               "Blue dots indicate the estimates obtained using design-based calculations. ");
   pth = wtsQMD::getFigFN();
-  lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,lbl=lbl,cap=cap,pth=pth,ori="P"));
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p2,lbl=lbl,cap=cap,pth=pth,ori="L"));
+  rm(p2,lbl,cap,pth);
 ```
 
 ```{r}
-#| label: fig_sdmTMB-REMA
+#| label: fig_sdmTMB-REMA1
 #| results: asis
-#| fig-width: 6.5
-#| fig-asp: 1.0
+#| fig-width: 9.0
+#| fig-asp: 0.65
   #--get REMA results and combine with sdmTMB results----
   lstREMAs = wtsUtilities::getObj(file.path(dirThs,"../04_SamplingBasedZerosSubstitutions/rda_Zeros_REMA_Models.RData"));
-  options = c(unique(lstREMAs$dfrPrds$option)[3:5],unique(dfrIdxs$option));
+  sdmTMB_best = "tw-ar";
+  options = c(unique(lstREMAs$dfrPrds$option)[3:5],sdmTMB_best);
   dfrIdxs1 = lstREMAs$dfrPrds |>
               dplyr::filter(option %in% options) |>
               dplyr::mutate(obs=3.4299*obs/1000,
@@ -293,14 +337,28 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
                            pred_lci=3.4299*pred_lci/1000,
                            pred_uci=3.4299*pred_uci/1000
                            ) |>
-              dplyr::bind_rows(dfrIdxs) |>
-              dplyr::mutate(option=factor(option,levels=c(options,"sdmTMB")));
+              dplyr::bind_rows(dfrIdxs |> dplyr::filter(option==sdmTMB_best)) |>
+              dplyr::mutate(option=factor(option,levels=c(options)));
   #--make plots----
   p1 = ggplot(dfrIdxs1,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
     geom_ribbon(alpha=0.3,colour=NA) + geom_point() + geom_line() +
     geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
     labs(y="predicted biomass (1,000's t)") +
     wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap = paste0("Biomass time series for mature male PIBKC, as estimated using each of the `rema` zeros options ",
+               "and the preferred sdmTMB model, `",sdmTMB_best,"`. ",
+               "Blue dots indicate the estimates obtained using design-based calculations.");
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p1,lbl=lbl,cap=cap,pth=pth,ori="L"));
+  rm(p1,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig_sdmTMB-REMA2
+#| results: asis
+#| fig-width: 9.0
+#| fig-asp: 0.65
   p2 = ggplot(dfrIdxs1,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
     geom_vline(xintercept=2020) +
     geom_vline(xintercept=2023:2024,linetype=3) +
@@ -309,6 +367,21 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
     scale_y_log10() +
     labs(y="predicted biomass (1,000's t)") +
     wtsPlots::getStdTheme();
+  lbl = wtsQMD::getLabel();
+  cap = paste0("Biomass time series for mature male PIBKC on the log10-scale, ",
+               "as estimated using each of the `rema` zeros options ",
+               "and the preferred sdmTMB model, `",sdmTMB_best,"`. ",
+               "Blue dots indicate the estimates obtained using design-based calculations.");
+  pth = wtsQMD::getFigFN();
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p2,lbl=lbl,cap=cap,pth=pth,ori="L"));
+rm(p2,lbl,cap,pth);
+```
+
+```{r}
+#| label: fig_sdmTMB-REMA3
+#| results: asis
+#| fig-width: 9.0
+#| fig-asp: 0.65
   p3 = ggplot(dfrIdxs1 |> dplyr::filter(year>2000),
          aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
     geom_vline(xintercept=2020) +
@@ -319,35 +392,20 @@ Here, four sdmTMB models ([@tbl-sdmTMB-Models]) were fit to spatially-explicit a
     scale_y_log10() +
     labs(y="predicted biomass (1,000's t)") +
     wtsPlots::getStdTheme();
-  pg = cowplot::plot_grid(p1,p2,p3,ncol=1);
 
   lbl = wtsQMD::getLabel();
-  cap = paste0("Biomass time series for mature male PIBKC, as estimated using each of the `rema` zeros options ",
-               "and the four sdmTMB models. ",
+  cap = paste0("Biomass time series since 2020 for mature male PIBKC on the log10-scale, ",
+               "as estimated using each of the `rema` zeros options ",
+               "and the preferred sdmTMB model, `",sdmTMB_best,"`. ",
                "Blue dots indicate the estimates obtained using design-based calculations.");
   pth = wtsQMD::getFigFN();
-  lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,lbl=lbl,cap=cap,pth=pth,ori="P"));
-rm(p1,p2,p3,pg,lbl,cap,pth);
+  lstFigs = c(lstFigs,wtsQMD::printGGplot(p3,lbl=lbl,cap=cap,pth=pth,ori="L"));
+rm(p3,lbl,cap,pth);
 ```
 
-```{r}
-#| label: fig_sdmTMB-Residuals
-#| results: asis
-#| fig-width: 9
-#| fig-asp: 1.0
-
-  lstRes = wtsUtilities::getObj(file.path(dirThs,"rda_resids_log_depth-st_rw-dg.RData"));
-  names(lstRes) = stringr::str_replace(stringr::str_remove(names(lstRes),"mdl_"),"_","-");
-  lstRes = lstRes[sort(names(lstRes))];
-  for (mdl in names(lstMdls)){
-    lbl = wtsQMD::getLabel(xtra=mdl);
-    cap = paste0("DHAMRa residuals diagnostics plots for '",mdl,"'.");
-    pth = wtsQMD::getFigFN(xtra=mdl);
-    lstFigs = c(lstFigs,wtsQMD::printRGraphics(expression(plot(lstRes[[mdl]])),lbl=lbl,cap=cap,pth=pth,ori="L"));
-  }
-rm(lstRes,mdl,lbl,cap,pth);
+```{r sdmTMB-Cleanup}
+rm(dfrACD_MM,dfrCPUE_MM,dfrIdxs,dfrIdxs1,dn,fn,get_model_print_info,get_smooth_terms,getMaxGradient,lstIdxs,lstIdxs1,lstMdls,lstREMAs,mdl,mdl_,mround,named_list,parse_smoothers,print_anisotropy,print_footer,print_header,print_iid_re,print_main_effects,print_one_model,print_other_parameters,print_range,print_sdmTMB,print_smooth_effects,print_time_varying,rm_wsp);
 ```
-
 
 <!-- references, if not child doc -->
 ```{r,eval=!knitr::opts_knit$get("child"),results='asis'}
@@ -358,7 +416,7 @@ rm(lstRes,mdl,lbl,cap,pth);
 
 <!-- tables, if not child doc and lstTbls is not empty -->
 ```{r}
-#| label: tables_SrvData
+#| label: tables_sdmTMB
 #| eval: !expr '!knitr::opts_knit$get("child")'
 #| results: asis
   source(system.file("files/printTablesSectionFromList.R",package="wtsQMD"));
@@ -366,7 +424,7 @@ rm(lstRes,mdl,lbl,cap,pth);
 
 <!-- figures, if not child doc and lstFigs is not empty -->
 ```{r}
-#| label: figures_SrvData
+#| label: figures_sdmTMB
 #| eval: !expr '!knitr::opts_knit$get("child")'
 #| results: asis
   source(system.file("files/printFiguresSectionFromList.R",package="wtsQMD"));

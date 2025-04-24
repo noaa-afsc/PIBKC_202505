@@ -157,15 +157,18 @@ This report is organized into the following sections: Responses to previus CPT a
 
 # Summary {#sec-Smry}
 
-The author recommends  
+The author looks forward to accessing the NMFS EBS bottom trawl survey data for crab using `crabpack` for the 2025 assessments. However, the author recommends  
 
-The author recommends using the full-precision carapace length measurements with the current length-weight regressions to calculate biomass from NMFS EBS survey abundance and size data.
+  * using the full-precision carapace length measurements with the current length-weight regressions to calculate biomass from NMFS EBS survey abundance and size data
+  * dropping the "extra" corner stations not included in the standard 375 stations from the 1979 NMFS EBS survey
 
-The author looks forward to discussions with the CPT and SSC regarding model choices for the September assessment and further refinements to address on a longer timescale.
+With regard to inclusion of historical data from the (now discontinued) corner stations in time series for future assessments, the author recommends that they continue to be included in estimates of abundance/biomass and size compositions. It would be worthwhile to consider whether using a spatially-explicit, model-based approach like `sdmTMB` to derive indices of abundance/biomass that takes into account changes in spatial relationships in both the data and the sampling regimes to minimize potential biases across the time series and better capture changes in uncertainty.
+
+With regard to "filling in the zeros" in the PIBKC design-based time series for MMB, the author looks forward to discussions with the CPT and SSC regarding the potential tradeoffs between the relative simplicity of the `rema` approaches and more statistically-defensible approaches like spatially-explicit model-based approach like `sdmTMB`. The author's recommendation is that `sdmTMB` be adopted as the modeling platform in the 2025 stock assessment to provide this index
 
 # Acknowledgments {#sec-Acks}
 
-The author would like to acknowledge and thank .
+The author would like to acknowledge and thank Shannon Hennessey (AFSC-SAP) for developing `crabpack`, Cole Monnahan (AFSC-SSMA) and Jane Sullivan (AFSC-MESA) for comments on the sampling-based approach to filling in time series zeros, Cole for help with interpreting `sdmTMB` results, and Lee Cronin-Fine (AFSC-SSMA) for providing an internal review of this document.
 
 
 <!-- references -->

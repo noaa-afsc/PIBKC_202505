@@ -63,6 +63,12 @@ params:
 
 ## Remarks pertinent to this assessment
 
+### CPT Comments Sept 2023-Sept 2024
+None
+
+### SSC Comments Oct 2023-Oct 2024
+None
+
 ### CPT comments May 2023:
 #### CPT comment
 The CPT agreed (following the author's recommendation) with the change to use the **rema** R package for the assessment.

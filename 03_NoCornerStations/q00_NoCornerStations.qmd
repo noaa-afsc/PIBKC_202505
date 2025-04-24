@@ -152,7 +152,7 @@ params:
                             pdif=2*100*diff/(WCS+NCS));
 ```
 
-### No corner stations {#sec-NCS}
+## No corner stations {#sec-NCS}
 
 As part of the effort to "modernize" the NMFS EBS bottom trawl survey to improve efficiency, the high-density "corner" stations in the NMFS EBS survey grid near the Pribilof Islands and St. Matthew Island ([@fig-NCS-SurveyBasemap]) were dropped for the 2024 survey and will not be sampled in future surveys. Assessment authors were asked to consider the impact of this change on their assessment. This section compares the estimates of mature male biomass (MMB) and other population components derived from previous surveys with corner stations with those obtained by dropping the corner stations in order to obtain a retrospective idea of the importance of the corner stations to estimates of the PIBKC MMB time series.
 
@@ -189,9 +189,9 @@ As part of the effort to "modernize" the NMFS EBS bottom trawl survey to improve
   rm(p,lbl,cap,pth);
 ```
 
-#### Survey biomass estimates
+### Survey biomass estimates
 
-Estimates of biomass from the NMFS EBS bottom trawl survey for different components of the PIBKC stock are compared by year in [@fig-NCS-SrvBio] for calculations made including or excluding the corner stations. Absolute differences and percent differences between the sets of survey stations are shown, respectively, in Figures [-@fig-NCS-SrvBioAbsDif] and [-@fig-NCS-SrvBioPctDif]. The percent differences are also shown in Table [-@tbl-NCS-SrvBioPctDif]. Figures [-@fig-NCS-MMB] and [-@fig-NCS-MMBlog ]provide more detailed looks at the differences between the two sets of survey stations. 
+Estimates of biomass from the NMFS EBS bottom trawl survey for different components of the PIBKC stock are compared by year in [@fig-NCS-SrvBio] for calculations made including or excluding the corner stations. Absolute differences and percent differences between the sets of survey stations are shown, respectively, in Figures [-@fig-NCS-SrvBioAbsDif] and [-@fig-NCS-SrvBioPctDif]. The percent differences are also shown in Table [-@tbl-NCS-SrvBioPctDif]. Figures [-@fig-NCS-MMB] and [-@fig-NCS-MMBlog ] provide more detailed looks at the differences between the two sets of survey stations. 
 
 Estimates of PIBKC MMB were generally higher when the corner stations were included: 25 years versus 17 years when excluding the corner stations resulted in a higher estimate. Since 2013, including the corner stations resulted in higher (or equal) estimates in all years except 2023 and 2024 when no mature males were caught anywhere.
 

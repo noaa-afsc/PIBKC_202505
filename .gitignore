@@ -11,3 +11,4 @@
 *.zip
 05_sdmTMB/rda_mdls-all_log_depth-st_rw-dg.RData
 05_sdmTMB/rda_prds_log_depth-st_rw-dg.RData
+*.pdf

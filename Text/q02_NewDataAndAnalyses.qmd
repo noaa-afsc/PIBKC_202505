@@ -1,5 +1,5 @@
 ---
-title: "2025 PIBKC Assessment Considerations"
+title: "2025 PIBKC Assessment Considerations: New Data and Analyses"
 author:
 - name: William T. Stockhausen
   affiliations:
@@ -143,7 +143,7 @@ child_path$push(file.path(child_path$peek(),fldr));
 ```{r sct_CrabPack, child=file.path(child_path$peek(),"q00_PIBKC_CrabpackDataComparisons.qmd")}
 ```
 ```{r}
-child_path$pop();
+str = child_path$pop();
 ```
 
 
@@ -156,7 +156,7 @@ child_path$push(file.path(child_path$peek(),fldr));
 ```{r sct_NoCorners, child=file.path(child_path$peek(),"q00_NoCornerStations.qmd")}
 ```
 ```{r}
-child_path$pop();
+str = child_path$pop();
 ```
 
 
@@ -169,7 +169,7 @@ child_path$push(file.path(child_path$peek(),fldr));
 ```{r sct_SubstZeros, child=file.path(child_path$peek(),"q00_SamplingBasedZerosSubstitutions.qmd")}
 ```
 ```{r}
-child_path$pop();
+str = child_path$pop();
 ```
 
 
@@ -179,10 +179,10 @@ child_path$pop();
 fldr = "../05_sdmTMB";
 child_path$push(file.path(child_path$peek(),fldr));
 ```
-```{r sct_sdmTMB, child=file.path(child_path$peek(),"q00_sdmTMBforZeroSubstitutions.qmd")}
+```{r sct_sdmTMB, child=file.path(child_path$peek(),"q00_PIBKC_sdmTMB.qmd")}
 ```
 ```{r}
-child_path$pop();
+str=child_path$pop();
 ```
 
 <!-- references -->
