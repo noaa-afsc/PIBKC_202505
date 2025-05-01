@@ -48,6 +48,11 @@ format:
           \usepackage{placeins}
           \extrafloats{500}
           \maxdeadcycles=10000
+          \usepackage{fontspec}
+          \usepackage{multicol}
+          \usepackage{hhline}
+          \newlength\Oldarrayrulewidth
+          \newlength\Oldtabcolsep
       - file: '`r system.file("files/ltx_ExtraLatexIncludes.tex",package="wtsQMD")`'
 echo: false
 warning: false
@@ -114,7 +119,7 @@ params:
 
 ```{r NCS-calcSurveyABs}
   #--Biomass and abundance----
-  ##--extract biomass/abundance time series for PIBKC with corner stations
+  ##--extract biomass/abundance time series for PIBKC WITH corner stations
   dfrWCS_ABs = lstWCS$dfrACD.ByX.PD |> 
                   dplyr::select(y=YEAR,
                                 STRATUM_AREA,
@@ -128,7 +133,7 @@ params:
                                 abd=MILLION*abd,
                                 bio=THOUSAND*bio);
   #head(dfrWCS_ABs);
-  ##--extract biomass/abundance time series for PIBKC with corner stations
+  ##--extract biomass/abundance time series for PIBKC WITHOUT corner stations
   dfrNCS_ABs = lstNCS$dfrACD.ByX.PD |> 
                   dplyr::select(y=YEAR,
                                 STRATUM_AREA,
@@ -181,7 +186,7 @@ As part of the effort to "modernize" the NMFS EBS bottom trawl survey to improve
         geom_sf(data=lstWCS$evs.stns |> dplyr::filter(YEAR==2023),colour="blue",alpha=0.9);# + 
         # geom_sf(data=hca,fill=NA,colour="orange",linewidth=1);
   lbl = wtsQMD::getLabel();
-  cap = paste0("The NMFS EBS Shelf Survey survey grid cells (thin black lines) and nominal sampling stations (large dots) ",
+  cap = paste0("The NMFS EBS Shelf Survey grid cells (thin black lines) and nominal sampling stations (large dots) ",
                'in the Pribilof District. The "corner" stations in the grid circles (16 stations) were dropped in 2024 and ',
                'will not be revisited during the survey for the foreseeable future.');
   pth = wtsQMD::getFigFN();
@@ -191,7 +196,7 @@ As part of the effort to "modernize" the NMFS EBS bottom trawl survey to improve
 
 ### Survey biomass estimates
 
-Estimates of biomass from the NMFS EBS bottom trawl survey for different components of the PIBKC stock are compared by year in [@fig-NCS-SrvBio] for calculations made including or excluding the corner stations. Absolute differences and percent differences between the sets of survey stations are shown, respectively, in Figures [-@fig-NCS-SrvBioAbsDif] and [-@fig-NCS-SrvBioPctDif]. The percent differences are also shown in Table [-@tbl-NCS-SrvBioPctDif]. Figures [-@fig-NCS-MMB] and [-@fig-NCS-MMBlog ] provide more detailed looks at the differences between the two sets of survey stations. 
+Estimates of biomass from the NMFS EBS bottom trawl survey for different components of the PIBKC stock are compared by year in [@fig-NCS-SrvBio] for calculations made including or excluding the corner stations. Absolute differences and percent differences between the sets of survey stations are shown, respectively, in Figures [-@fig-NCS-SrvBioAbsDif] and [-@fig-NCS-SrvBioPctDif]. The percent differences are also shown in Table [-@tbl-NCS-SrvBioPctDif]. Figures [-@fig-NCS-MMB] and [-@fig-NCS-MMBlog] provide more detailed coparisons between the two sets of survey stations for mature male biomass (MMB) only. 
 
 Estimates of PIBKC MMB were generally higher when the corner stations were included: 25 years versus 17 years when excluding the corner stations resulted in a higher estimate. Since 2013, including the corner stations resulted in higher (or equal) estimates in all years except 2023 and 2024 when no mature males were caught anywhere.
 
@@ -234,8 +239,10 @@ Estimates of PIBKC MMB were generally higher when the corner stations were inclu
              legend.justification=c(1,1));
   pg = cowplot::plot_grid(p1,p2,nrow=1,rel_widths=c(1,2.5));
   cap = paste0("Comparison of annual estimates of design-based area-swept biomass ",
-               "from the NMFS EBS bottom trawl survey by the 2023 PIBKC assessment (*asmt*) and ",
-               "the `crabpack` R package (*crabpack*), by population category.");
+               'by population category when the corner stations are included ("WCS") ',
+               'and when they are excluded ("NCS"). ',
+               "Note that corner stations were not sampled in 1975-1981 and 2024. ",
+               "Additionally, no survey was conducted in 2020.");
   lbl = wtsQMD::getLabel();
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,lbl=lbl,cap=cap,pth=pth,ori="L"));
@@ -280,8 +287,10 @@ Estimates of PIBKC MMB were generally higher when the corner stations were inclu
              legend.justification=c(1,1));
   pg = cowplot::plot_grid(p1,p2,nrow=1,rel_widths=c(1,2.5));
   cap = paste0("Differences in annual estimates of design-based area-swept biomass ",
-               "from the NMFS EBS bottom trawl survey by the 2023 PIBKC assessment and ",
-               "the `crabpack` R package, by population category.");
+               'by population category when the corner stations are included ("WCS") ',
+               'and when they are excluded ("NCS"). ',
+               "Note that corner stations were not sampled in 1975-1981 and 2024. ",
+               "Additionally, no survey was conducted in 2020.");
   lbl = wtsQMD::getLabel();
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,lbl=lbl,cap=cap,pth=pth,ori="L"));
@@ -324,8 +333,10 @@ Estimates of PIBKC MMB were generally higher when the corner stations were inclu
              legend.justification=c(1,1));
   pg = cowplot::plot_grid(p1,p2,nrow=1,rel_widths=c(1,2.5));
   cap = paste0("Percent differences in annual estimates of design-based area-swept biomass ",
-               "from the NMFS EBS bottom trawl survey by the 2023 PIBKC assessment and ",
-               "the `crabpack` R package, by population category.");
+               'by population category when the corner stations are included ("WCS") ',
+               'and when they are excluded ("NCS").',
+               "Note that corner stations were not sampled in 1975-1981 and 2024. ",
+               "Additionally, no survey was conducted in 2020.");
   lbl = wtsQMD::getLabel();
   pth = wtsQMD::getFigFN();
   lstFigs = c(lstFigs,wtsQMD::printGGplot(pg,lbl=lbl,cap=cap,pth=pth,ori="L"));
@@ -339,7 +350,10 @@ Estimates of PIBKC MMB were generally higher when the corner stations were inclu
   kbl = tblr |> wtsQMD::convert_tblr_to_kbl(col_spec=c(1),isHTM,
                                             ltx_font_size=7,replaceNAs="--",adjColSpacing=-4);
   cap = paste0("Percent difference, by year, in design-based NMFS survey biomass trends ",
-               "from the 2023 PIBKC assessment and the `crabpack` R package, by population category. ",
+               'by population category when the corner stations are included ("WCS") ',
+               'and when they are excluded ("NCS"). ',
+               "Note that corner stations were not sampled in 1975-1981 and 2024. ",
+               "Additionally, no survey was conducted in 2020. ",
                "NaN: indicates that no crab in the category were caught.");
   lstTbls = c(lstTbls,
               wtsQMD::insertKblIntoQMD(kbl,
@@ -446,7 +460,7 @@ Estimates of PIBKC MMB were generally higher when the corner stations were inclu
 ```
 
 <!-- references, if not child doc -->
-```{r,eval=!knitr::opts_knit$get("child"),results='asis'}
+```{r,eval=!knitr::opts_knit$get("child")&&!isPDF,results='asis'}
   cat("# References {-}\n");
   cat("::: {#refs}\n");
   cat(":::\n\n");

@@ -69,7 +69,7 @@ echo: false
 message: false
 warning: false
 results: 'hide'
-keep-md: true
+keep-md: false
 keep-yaml: false
 editor: source
 editor_options: 
@@ -145,7 +145,7 @@ The next full assessment for the Pribilof Islands blue king crab (PIBKC) stock w
 
 This report primarily addresses a number of issues related to data from the NMFS EBS bottom trawl survey for PIBKC that have arisen since the last assessment. First, AFSC's Shellfish Assessment Program (SAP) has developed an R package, "crabpack", as a replacement to AKFIN Answers (https://akfin.psmfc.org) for obtaining crab-related survey data in a standard format. SAP requested that assessment authors test the package and compare results of data pulls using the package with data pulled using the authors' previous methods. Second, as part of the effort to "modernize" the NMFS EBS bottom trawl survey to improve efficiency, the high-density "corner" stations in the NMFS EBS survey grid near the Pribilof Islands and St. Matthew Island were dropped for the 2024 survey and will not be sampled in future surveys. Assessment authors were asked to consider the impact of this change on their assessment. Finally, the 2023 and 2024 surveys found no mature male blue king crab in the Pribilof Islands sampling strata. While this is principally a consequence of applying relatively low sampling effort to a stock at low (but non-zero) abundance, the "hard zeros" introduced in the time series of mature male biomass for PIBKC can be problematic for the subsequent assessment. Several approaches to dealing with this issue are considered here. 
 
-This report is organized into the following sections: Responses to previus CPT and SSC Comments (@sec-Resps), "New" Data and Analyses (@sec-NDAs), Summary (@sec-Smry), and Acknowledgments (@sec-Acks).
+This report is organized into the following sections: Responses to previous CPT and SSC Comments (@sec-Resps), "New" Data and Analyses (@sec-NDAs), Summary (@sec-Smry), and Acknowledgments (@sec-Acks).
 
 <!-- # Responses to CPT and SSC Comments {#sec-Resps} -->
 ```{r sct_Resps, child=file.path(child_path$peek(),"q01_PIBKC_ResponsesToComments2025.qmd")}
@@ -157,18 +157,18 @@ This report is organized into the following sections: Responses to previus CPT a
 
 # Summary {#sec-Smry}
 
-The author looks forward to accessing the NMFS EBS bottom trawl survey data for crab using `crabpack` for the 2025 assessments. However, the author recommends  
+I look forward to accessing the NMFS EBS bottom trawl survey data for crab using `crabpack` for the 2025 assessments. However, I recommend
 
-  * using the full-precision carapace length measurements with the current length-weight regressions to calculate biomass from NMFS EBS survey abundance and size data
+  * using the full-precision carapace length measurements with the current length-weight regressions to calculate biomass from NMFS EBS survey abundance and size data and
   * dropping the "extra" corner stations not included in the standard 375 stations from the 1979 NMFS EBS survey
 
-With regard to inclusion of historical data from the (now discontinued) corner stations in time series for future assessments, the author recommends that they continue to be included in estimates of abundance/biomass and size compositions. It would be worthwhile to consider whether using a spatially-explicit, model-based approach like `sdmTMB` to derive indices of abundance/biomass that takes into account changes in spatial relationships in both the data and the sampling regimes to minimize potential biases across the time series and better capture changes in uncertainty.
+With regard to inclusion of historical data from the (now discontinued) corner stations in time series for future assessments, I recommend that these data continue to be included in estimates of abundance/biomass and size compositions. It is worthwhile to consider whether using a spatially-explicit, model-based approach like `sdmTMB` to derive indices of abundance/biomass that takes into account changes in spatial relationships in both the data and the sampling regimes, is better suited to minimize potential biases across the time series and better capture changes in uncertainty.
 
-With regard to "filling in the zeros" in the PIBKC design-based time series for MMB, the author looks forward to discussions with the CPT and SSC regarding the potential tradeoffs between the relative simplicity of the `rema` approaches and more statistically-defensible approaches like spatially-explicit model-based approach like `sdmTMB`. The author's recommendation is that `sdmTMB` be adopted as the modeling platform in the 2025 stock assessment to provide this index
+With regard to "filling in the zeros" in the PIBKC design-based time series for MMB, I look forward to discussions with the CPT and SSC regarding the potential tradeoffs between the relative simplicity of the `rema` approaches and more statistically-defensible approaches like spatially-explicit model-based approach like `sdmTMB`. My recommendation is that `sdmTMB` be adopted as the modeling platform in the 2025 stock assessment to provide this index.
 
 # Acknowledgments {#sec-Acks}
 
-The author would like to acknowledge and thank Shannon Hennessey (AFSC-SAP) for developing `crabpack`, Cole Monnahan (AFSC-SSMA) and Jane Sullivan (AFSC-MESA) for comments on the sampling-based approach to filling in time series zeros, Cole for help with interpreting `sdmTMB` results, and Lee Cronin-Fine (AFSC-SSMA) for providing an internal review of this document.
+I would like to acknowledge and thank Shannon Hennessey (AFSC) for developing `crabpack`, Cole Monnahan (AFSC) and Jane Sullivan (AFSC) for comments on the sampling-based approach to filling in time series zeros, Cole for help with interpreting `sdmTMB` results, and Sandra Lowe (AFSC) for providing an internal review of this document.
 
 
 <!-- references -->

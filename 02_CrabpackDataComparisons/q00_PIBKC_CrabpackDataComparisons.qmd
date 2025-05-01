@@ -48,6 +48,11 @@ format:
           \usepackage{placeins}
           \extrafloats{500}
           \maxdeadcycles=10000
+          \usepackage{fontspec}
+          \usepackage{multicol}
+          \usepackage{hhline}
+          \newlength\Oldarrayrulewidth
+          \newlength\Oldtabcolsep
       - file: '`r system.file("files/ltx_ExtraLatexIncludes.tex",package="wtsQMD")`'
 echo: false
 warning: false
@@ -324,7 +329,7 @@ Estimates of Pribilof District abundance from the NMFS bottom trawl survey for m
   kblr = tblr |> wtsQMD::convert_tblr_to_kbl(col_spec=c(1),!isPDF,
                                              ltx_font_size=7,replaceNAs="--",adjColSpacing=-4);
   cap = paste0("Percent difference, by year, in  design-based NMFS survey abundance trends ",
-               "from the 2023 PIBKC assessment and the `crabpack` R package, by population state. ",
+               "from the 2023 PIBKC assessment and the `crabpack` R package, by population category. ",
                "NaN: indicates that no crab in the category were caught.");
   lstTbls = c(lstTbls,
               wtsQMD::insertKblIntoQMD(kblr,

@@ -59,7 +59,7 @@ params:
   testing: false
 ---
 
-# Responses to SSC and CPT Comments {#sec-Responses}
+# Responses to SSC and CPT Comments {#sec-Resps}
 
 ## Remarks pertinent to this assessment
 
