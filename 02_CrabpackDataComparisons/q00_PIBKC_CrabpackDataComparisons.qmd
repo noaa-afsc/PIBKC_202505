@@ -65,7 +65,7 @@ editor_options:
 concordance: true
 params:
   setup: !expr 'system.file("files/qmd_setup.R",package="wtsQMD")'
-  dirAsmt: "~/Work/StockAssessments-Crab/Assessments/TannerCrab/2024-09_TannerCrab/AssessmentData/Data_Surveys_NMFS"
+  dirAsmt: "~/Work/StockAssessments-Crab/Assessments/TannerCrab/2023-09.PIBKC"
   testing: false
 ---
 <!-- IMPORTANT: if used as a child doc, all chunk labels must be unique within the overall document -->
@@ -341,7 +341,7 @@ Estimates of Pribilof District abundance from the NMFS bottom trawl survey for m
 
 ### Survey biomass estimates
 
-Estimates of EBS-wide biomass from the NMFS bottom trawl survey for male and female Tanner crab by maturity state are compared by year in [@fig-CrabPack-SrvBio] for calculations made in the 2023 assessment [@PIBKC2023] and with the `crabpack` R package. Absolute differences and percent differences between the two methods are shown, respectively, in Figures [-@fig-CrabPack-SrvBioAbsDif] and [-@fig-CrabPack-SrvBioPctDif]. The percent differences are also shown in Table [-@tbl-CrabPack-SrvBioPctDif] to two decimal places. 
+Estimates of EBS-wide biomass from the NMFS bottom trawl survey for male and female PIBKC by maturity state are compared by year in [@fig-CrabPack-SrvBio] for calculations made in the 2023 assessment [@PIBKC2023] and with the `crabpack` R package. Absolute differences and percent differences between the two methods are shown, respectively, in Figures [-@fig-CrabPack-SrvBioAbsDif] and [-@fig-CrabPack-SrvBioPctDif]. The percent differences are also shown in Table [-@tbl-CrabPack-SrvBioPctDif] to two decimal places. 
 
 As with abundance, the figures and table demonstrate excellent agreement between the two methods in all survey years prior to 2016 except 1979, when estimates from the two methods differ substantially (> 10%). Unlike the abundance estimates, the two methods also exhibit small differences (< 5 %) in 2016 and subsequent years. The estimates from the assessment for 2016 and later are larger than those from `crabpack` in all years. The post-2015 differences between the two methods may reflect differences in the size used to calculate the weight of individual crab: the assessment uses carapace width to the first decimal place while `crabpack` apparently uses the carapace width to 1-mm.
 
