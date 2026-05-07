@@ -20,12 +20,12 @@ if (FALSE){
                                                   byShellCondition=FALSE,
                                                   bySize=FALSE,
                                                   export=FALSE,
-                                                  verbosity=verbosity);
+                                                  verbosity=verbosity); #--wgtCPUE in t/sq. nmi.
   #####--calculate CPUE by station
   dfrCPUE.ByXM <-tcsamSurveyData::calcCPUE.ByStation(lstWTS$dfr.SD,
                                                      dfrCPUE.ByXM,
                                                      export=FALSE,
-                                                     verbosity=verbosity);
+                                                     verbosity=verbosity); #--wgtCPUE in t/sq. nmi.
   #####--calculate biomass/abundance by stratum
   dfrACD.ByXM.ByStrata <-tcsamSurveyData::calcAB.ByStratum(tbl_strata=lstWTS$dfr.SD,
                                                            tbl_cpue=dfrCPUE.ByXM,
@@ -34,7 +34,7 @@ if (FALSE){
   #####--calculate biomass/abundance for the Pribilof District
   dfrACD.ByXM<-tcsamSurveyData::calcAB.EBS(dfrACD.ByXM.ByStrata,
                                             export=FALSE,
-                                            verbosity=verbosity) |>
+                                            verbosity=verbosity) |>     #--totBiomass in 1,000's t
                  dplyr::mutate(STRATUM="Pribilof District");
   dfrACD_MM = dfrACD.ByXM |>
                  dplyr::filter(SEX=="4. mature males"); #--keep mature males only
@@ -52,7 +52,7 @@ if (FALSE){
   ###--for CPUE,select only mature males, add environmental covariates,
   ####--convert lon/lat to utm (might want to use Alaska Albers)
   dfrCPUE_MM = dfrCPUE.ByXM |> dplyr::filter(SEX=="4. mature males") |>        #--mature males only
-                 dplyr::select(YEAR,GIS_STATION,numIndivs,numCPUE,wgtCPUE) |>  #--keep only
+                 dplyr::select(YEAR,GIS_STATION,numIndivs,numCPUE,wgtCPUE) |>  #--keep only (wgtCPUE in t/sq. nmi)
                  dplyr::inner_join(lstWTS$evs.stns |> sf::st_drop_geometry() |>
                                      dplyr::select(YEAR,GIS_STATION,LON,LAT,BOTTOM_DEPTH,BOTTOM_TEMP),
                                    by=dplyr::join_by(YEAR,GIS_STATION)) |>
@@ -62,7 +62,7 @@ if (FALSE){
   wtsUtilities::saveObj(dfrCPUE_MM,file.path(dirThs,"rda_CPUE_MM.RData"));
 } else {
   dfrACD_MM  = wtsUtilities::getObj(file.path(dirThs,"rda_ACD_MM.RData"));
-  dfrCPUE_MM = wtsUtilities::getObj(file.path(dirThs,"rda_CPUE_MM.RData"));
+  dfrCPUE_MM = wtsUtilities::getObj(file.path(dirThs,"rda_CPUE_MM.RData")); #--wgtCPUE in t/sq.nmi.
 }
   ##--make meshes----
 if (FALSE){
@@ -106,10 +106,10 @@ if (FALSE){
 if (FALSE){
   dfr = dfrCPUE_MM |> dplyr::mutate(log_depth=log(BOTTOM_DEPTH),
                                     log_temp = log(BOTTOM_TEMP)) |>
-          dplyr::select(year=YEAR,X,Y,wgtCPUE,log_depth,log_temp);
+          dplyr::select(year=YEAR,X,Y,wgtCPUE,log_depth,log_temp);    #--wgtCPUE in t/sq.nmi.
   ###--model m3----
   mdl_m3 <- sdmTMB::sdmTMB(
-              wgtCPUE ~ s(log_depth),
+              wgtCPUE ~ s(log_depth),  #--in t/sq.nmi.
               data = dfr,
               mesh = mesh3,
               time="year",
@@ -128,7 +128,7 @@ if (FALSE){
             );
   ###--model m3_tw----
   mdl_tw <- sdmTMB::sdmTMB(
-              wgtCPUE ~ s(log_depth),
+              wgtCPUE ~ s(log_depth),  #--in t/sq.nmi.
               data = dfr,
               mesh = mesh3,
               time="year",
@@ -153,10 +153,10 @@ if (FALSE){
 if (FALSE){
   dfr = dfrCPUE_MM |> dplyr::mutate(log_depth=log(BOTTOM_DEPTH),
                                     log_temp = log(BOTTOM_TEMP)) |>
-          dplyr::select(year=YEAR,X,Y,wgtCPUE,log_depth,log_temp);
+          dplyr::select(year=YEAR,X,Y,wgtCPUE,log_depth,log_temp);  #--in t/sq.nmi.
   ###--model m3_ar----
   mdl_m3_ar = sdmTMB::sdmTMB(
-                wgtCPUE ~ s(log_depth),
+                wgtCPUE ~ s(log_depth),  #--in t/sq.nmi.
                 data = dfr,
                 mesh = mesh3,
                 time="year",
@@ -175,7 +175,7 @@ if (FALSE){
               );
   ###--model tw_ar----
   mdl_tw_ar = sdmTMB::sdmTMB(
-                wgtCPUE ~ s(log_depth),
+                wgtCPUE ~ s(log_depth),  #--in t/sq.nmi.
                 data = dfr,
                 mesh = mesh3,
                 time="year",
@@ -247,7 +247,11 @@ dfrAICs = dplyr::bind_rows(lst);
   lstIdxs1 = list();
   for (mdl in names(mdls)){
     lstIdxs1[[mdl]] = lstIdxs[[mdl]] |>
-                        dplyr::select(year,pred=est,pred_lci=lwr,pred_uci=upr,se) |>
+                        dplyr::select(year,
+                                      pred=est,      #--predicted CPUE in t/sq.nmi.
+                                      pred_lci=lwr,
+                                      pred_uci=upr,
+                                      se) |>
                         dplyr::mutate(option=mdl,
                                       pred_cv=se/pred) |>
                         dplyr::select(!se);
@@ -255,14 +259,20 @@ dfrAICs = dplyr::bind_rows(lst);
   dfrIdxs = dplyr::bind_rows(lstIdxs1);
   ggplot(dfrIdxs,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
     geom_ribbon(alpha=0.3) + geom_point() + geom_line() +
-    geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+    geom_point(data=dfrACD_MM,
+               mapping=aes(x=YEAR,y=3.4299*totBIOMASS),  #--wrong!: should have divided dfrIdxs$pred, etc. by 3.4299
+               colour="blue",
+               inherit.aes=FALSE) +
     labs(y="biomass (1,000's t)") +
     wtsPlots::getStdTheme();
   ggplot(dfrIdxs,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
     geom_ribbon(colour=NA,alpha=0.5) + geom_line() +
     geom_vline(xintercept=2020) +
     geom_vline(xintercept=2023:2024,linetype=3) +
-    geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+    geom_point(data=dfrACD_MM,
+               mapping=aes(x=YEAR,y=3.4299*totBIOMASS),  #--wrong!: should have divided dfrIdxs$pred, etc. by 3.4299
+               colour="blue",
+               inherit.aes=FALSE) +
     scale_y_log10() +
     labs(y="biomass (1,000's t)") +
     wtsPlots::getStdTheme();
@@ -283,7 +293,10 @@ dfrAICs = dplyr::bind_rows(lst);
               dplyr::mutate(option=factor(option,levels=c(options,"sdmTMB")));
   ggplot(dfrIdxs1,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
     geom_ribbon(alpha=0.3,colour=NA) + geom_point() + geom_line() +
-    geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+    geom_point(data=dfrACD_MM,
+               mapping=aes(x=YEAR,y=3.4299*totBIOMASS),
+               colour="blue",
+               inherit.aes=FALSE) +
     labs(y="predicted biomass (1,000's t)") +
     wtsPlots::getStdTheme();
   ggplot(dfrIdxs1,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +

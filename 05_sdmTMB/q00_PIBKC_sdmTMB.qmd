@@ -286,7 +286,9 @@ rm(lstRes,mdl,lbl,cap,pth);
   dfrIdxs = dplyr::bind_rows(lstIdxs1);
   p1 = ggplot(dfrIdxs,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
         geom_ribbon(alpha=0.3) + geom_point() + geom_line() +
-        geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+        geom_point(data=dfrACD_MM,
+                   mapping=aes(x=YEAR,y=3.4299*totBIOMASS), #--wrong: should divide dfrIdxs values by 3.4299
+                   colour="blue",inherit.aes=FALSE) +
         labs(y="biomass (1,000's t)") +
         wtsPlots::getStdTheme();
   lbl = wtsQMD::getLabel();
@@ -306,7 +308,9 @@ rm(lstRes,mdl,lbl,cap,pth);
         geom_ribbon(colour=NA,alpha=0.5) + geom_line() +
         geom_vline(xintercept=2020) +
         geom_vline(xintercept=2023:2024,linetype=3) +
-        geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+        geom_point(data=dfrACD_MM,
+                   mapping=aes(x=YEAR,y=3.4299*totBIOMASS), #--wrong: should divide dfrIdxs values by 3.4299
+                  colour="blue",inherit.aes=FALSE) +
         scale_y_log10() +
         labs(y="biomass (1,000's t)") +
         wtsPlots::getStdTheme();
@@ -330,7 +334,7 @@ rm(lstRes,mdl,lbl,cap,pth);
   options = c(unique(lstREMAs$dfrPrds$option)[3:5],sdmTMB_best);
   dfrIdxs1 = lstREMAs$dfrPrds |>
               dplyr::filter(option %in% options) |>
-              dplyr::mutate(obs=3.4299*obs/1000,
+              dplyr::mutate(obs=3.4299*obs/1000,         #--wrong: should divide dfrIdxs values by 3.4299
                            obs_lci=3.4299*obs_lci/1000,
                            obs_uci=3.4299*obs_uci/1000,
                            pred=3.4299*pred/1000,
@@ -342,7 +346,9 @@ rm(lstRes,mdl,lbl,cap,pth);
   #--make plots----
   p1 = ggplot(dfrIdxs1,aes(x=year,y=pred,ymin=pred_lci,ymax=pred_uci,colour=option,fill=option)) +
     geom_ribbon(alpha=0.3,colour=NA) + geom_point() + geom_line() +
-    geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+    geom_point(data=dfrACD_MM,
+               mapping=aes(x=YEAR,y=3.4299*totBIOMASS), #--wrong: should divide dfrIdxs values by 3.4299
+               colour="blue",inherit.aes=FALSE) +
     labs(y="predicted biomass (1,000's t)") +
     wtsPlots::getStdTheme();
   lbl = wtsQMD::getLabel();
@@ -363,7 +369,9 @@ rm(lstRes,mdl,lbl,cap,pth);
     geom_vline(xintercept=2020) +
     geom_vline(xintercept=2023:2024,linetype=3) +
     geom_ribbon(alpha=0.3,colour=NA) + geom_point() + geom_line() +
-    geom_point(data=dfrACD_MM,mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+    geom_point(data=dfrACD_MM,
+               mapping=aes(x=YEAR,y=3.4299*totBIOMASS), #--wrong: should divide dfrIdxs values by 3.4299
+               colour="blue",inherit.aes=FALSE) +
     scale_y_log10() +
     labs(y="predicted biomass (1,000's t)") +
     wtsPlots::getStdTheme();
@@ -388,7 +396,8 @@ rm(p2,lbl,cap,pth);
     geom_vline(xintercept=2023:2024,linetype=3) +
     geom_ribbon(alpha=0.3,colour=NA) + geom_point() + geom_line() +
     geom_point(data=dfrACD_MM |> dplyr::filter(YEAR>2000),
-               mapping=aes(x=YEAR,y=3.4299*totBIOMASS),colour="blue",inherit.aes=FALSE) +
+               mapping=aes(x=YEAR,y=3.4299*totBIOMASS), #--wrong: should divide dfrIdxs values by 3.4299
+               colour="blue",inherit.aes=FALSE) +
     scale_y_log10() +
     labs(y="predicted biomass (1,000's t)") +
     wtsPlots::getStdTheme();

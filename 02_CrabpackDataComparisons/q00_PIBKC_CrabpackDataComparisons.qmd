@@ -133,13 +133,13 @@ params:
                               STRATUM_AREA,
                               xm=SEX,
                               x=SEXp,
-                              abd=totABUNDANCE,
+                              abd=totABUNDANCE,   #--in millions
                               abdCV=cvABUNDANCE,
-                              bio=totBIOMASS,
+                              bio=totBIOMASS,     #--in 1000's t
                               bioCV=cvBIOMASS) |> 
                 dplyr::mutate(type="asmt",
-                              abd=MILLION*abd,
-                              bio=THOUSAND*bio);
+                              abd=MILLION*abd,    # in numbers of individuals
+                              bio=THOUSAND*bio);  #--in t
   #head(dfrW_ABs);
   ##--get crabpack biomass/abundance time series----
   dfrC_ABs = calc_bioabund(lstCP,
@@ -154,9 +154,9 @@ params:
                         STRATUM_AREA=TOTAL_AREA,
                         xm=CATEGORY,
                         x=SEX_TEXT,
-                        abd=ABUNDANCE,
+                        abd=ABUNDANCE,       #--in numbers
                         abdCV=ABUNDANCE_CV,
-                        bio=BIOMASS_MT,
+                        bio=BIOMASS_MT,      #--in t
                         bioCV=BIOMASS_MT_CV) |> 
           dplyr::mutate(type="crabpack",
                         xm=paste0(stringr::str_replace(xm,"_"," "),"s"));

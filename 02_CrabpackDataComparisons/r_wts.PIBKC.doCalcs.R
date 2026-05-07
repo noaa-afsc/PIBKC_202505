@@ -1,7 +1,8 @@
 #--do calculations for NMFS survey data for PIBKC
 #--NOTE: output units for biomass are 1000's t, for abundance are millions
+#--NOTE: output units for wgtCPUE are t/sq.nmi., for numCPUE are numbers/sq.nmi.
 
-dirThs = dirname(rstudioapi::getActiveDocumentContext()$path)
+dirThs = dirname(rstudioapi::getSourceEditorContext()$path)
 setup = wtsUtilities::getObj(file.path(dirThs,"../rda_AssessmentSetup.RData"));
 
 #--set options
@@ -181,7 +182,7 @@ dfr.ID<-rbind(dfrID.ImmF,dfrID.MatF,dfrID.AllF,
               dfrID.ImmM,dfrID.MatM,dfrID.SubL,dfrID.LglM,dfrID.AllM);
 
 #--Calculate annual survey abundance and biomass by sex/size group for the Pribilof District
-#----calculate CPUE by haul
+#----calculate CPUE by haul: numbers/sq.nmi.; t/sq.nmi.
 dfrCPUE.ByX <-calcCPUE.ByHaul(dfr.HD,
                               dfr.ID,
                               bySex=TRUE,
@@ -309,6 +310,8 @@ rm(dfr.crabhauls,dfr.SDp,
 tsr=list(dirData=dirData,
          units_biomass="1000s t",
          units_abundance="millions",
+         units_numCPUE="numbers/sq.nmi.",
+         units_wgtCPUE="t/sq.nmi.",
          downloadDate=downloadDate,
          fn.SD=fn.SD,
          fn.CH=fn.CH,
